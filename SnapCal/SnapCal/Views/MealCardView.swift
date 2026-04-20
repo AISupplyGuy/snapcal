@@ -2,11 +2,22 @@ import SwiftUI
 
 struct MealCardView: View {
     @State var meal: MealEntry
+    let photo: UIImage?
     let onCommit: (MealEntry) -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                if let photo {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 180)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+
                 Text(meal.mealName).font(.title2).bold()
 
                 totalsCard

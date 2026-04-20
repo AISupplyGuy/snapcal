@@ -11,16 +11,32 @@ struct ContentView: View {
                 case .idle:
                     IdlePrompt(onTapCamera: { showingCamera = true })
                 case .analyzing:
-                    AnalyzingView()
+                    AnalyzingView(photo: viewModel.capturedPhoto)
                 case .ready(let meal):
-                    MealCardView(meal: meal) { updated in
+                    MealCardView(meal: meal, photo: viewModel.capturedPhoto) { updated in
                         viewModel.commitCorrections(updated)
                     }
                 case .failed(let message):
-                    FailureView(message: message, onRetry: { showingCamera = true })
+                    FailureView(message: message, onRetry: retake)
                 }
             }
             .navigationTitle("SnapCal")
+            .toolbar {
+                if case .ready = viewModel.state {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .cancel, action: retake) {
+                            Label("Retake", systemImage: "chevron.left")
+                        }
+                    }
+                }
+                if case .analyzing = viewModel.state {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .cancel, action: viewModel.reset) {
+                            Label("Cancel", systemImage: "xmark")
+                        }
+                    }
+                }
+            }
             .sheet(isPresented: $showingCamera) {
                 CameraView { image in
                     showingCamera = false
@@ -28,6 +44,11 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    private func retake() {
+        viewModel.reset()
+        showingCamera = true
     }
 }
 
@@ -60,15 +81,37 @@ private struct IdlePrompt: View {
 }
 
 private struct AnalyzingView: View {
+    let photo: UIImage?
+
     var body: some View {
         VStack(spacing: 16) {
+            if let photo {
+                Image(uiImage: photo)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 260)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(.quaternary, lineWidth: 1))
+                    .padding(.horizontal)
+                    .overlay(alignment: .bottomTrailing) {
+                        Image(systemName: "sparkle")
+                            .font(.title2)
+                            .padding(10)
+                            .background(.thinMaterial, in: Circle())
+                            .padding(24)
+                    }
+            }
             ProgressView().controlSize(.large)
             Text("Identifying items…")
                 .foregroundStyle(.secondary)
             Text("Looking up verified nutrition")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
+            Spacer()
         }
+        .padding(.top, 20)
     }
 }
 

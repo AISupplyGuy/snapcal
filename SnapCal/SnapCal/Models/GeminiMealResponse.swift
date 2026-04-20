@@ -59,6 +59,25 @@ enum PortionUnit: String, Codable, Sendable {
         case .cup, .slice, .piece: return nil
         }
     }
+
+    // Gemini sometimes returns free-text units ("bun", "scoop", "patty", "bottle").
+    // Coerce to the closest supported unit instead of failing the whole decode.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self).lowercased()
+        if let direct = PortionUnit(rawValue: raw) {
+            self = direct; return
+        }
+        switch raw {
+        case "grams", "gram": self = .grams
+        case "ounce", "ounces", "fl oz", "fluid ounce": self = .ounces
+        case "cups": self = .cup
+        case "slices": self = .slice
+        case "tablespoons", "tablespoon": self = .tablespoon
+        case "teaspoons", "teaspoon": self = .teaspoon
+        case "milliliter", "liters", "liter", "l": self = .milliliters
+        default: self = .piece  // bun, patty, scoop, bottle, can, dog, etc.
+        }
+    }
 }
 
 enum PlateContext: String, Codable, Sendable {

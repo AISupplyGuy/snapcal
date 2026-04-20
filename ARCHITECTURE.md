@@ -48,11 +48,39 @@ In six months of real users, you accumulate 50k+ labeled examples of real food p
 
 Start collecting from v1.0 even if the dataset is not used for a year. It is free to collect and impossible to retrofit.
 
-### Layer 5: Confidence-based ensemble
+### Layer 5: Confidence-based model tiering
 
-When Gemini returns confidence below 0.7 (or whatever threshold tuning shows works), silently also send the photo to GPT-4o Vision. Compare the two calorie estimates. If they agree within 25%, accept the Gemini response. If they diverge, prompt the user: "We're not sure about this one. Can you add details?"
+Don't pay Pro-tier compute for a cherry tomato, but don't accept Flash-tier accuracy on a complex restaurant plate. The right signal for "should I escalate to a stronger model" is **Gemini's own confidence score**, not item count, not file size, not photo composition.
 
-High-confidence cases stay cheap at $0.002 per Gemini call. Low-confidence cases spot-check for an extra penny. The total cost impact is minimal, and outlier predictions never reach the user unflagged.
+**Why confidence beats item count as the signal:**
+
+Item count was considered and rejected as the gating signal, even though the intuition ("simple photo = weaker model, complex photo = stronger model") is directionally right. The problems:
+
+- You need a model to count items, so the cheap first call still costs. On hard photos you end up paying for two model calls (count → re-run).
+- Item count doesn't map cleanly to nutrition complexity. A burrito is 1 visible item but 10 ingredients inside. A smoothie is 1 item, 5 components. A stew is 1 item, 8 foods. Meanwhile three visually separated items (grilled chicken, rice, broccoli) is trivial.
+- Gemini's `overall_confidence` is already calibrated to actual task difficulty — including these hidden-ingredient cases — so it's strictly better than any proxy.
+
+**The tiered routing:**
+
+| Signal | Action |
+|---|---|
+| `brand_cue` returned by Gemini | Skip ensemble entirely. Chain menu DB is the truth source. |
+| `overall_confidence >= 0.7` | Accept Flash 2.5 response as-is. |
+| `overall_confidence < 0.7` | Silently re-send the photo to **Gemini 2.5 Pro**. Compare answers. Agree within 25% → use Flash's answer. Diverge → prompt user to verify. |
+| Optional user toggle "Quick mode" | Use Flash-Lite instead of Flash for users who know they're logging one simple thing and want sub-5s response. |
+
+**Why Gemini 2.5 Pro as the fallback (not GPT-4o):**
+
+Same provider, single contract, single monitoring surface, no cross-provider prompt translation. Pro's accuracy advantage over Flash is meaningful on hard cases (multi-component dishes, ambiguous portions, low-light photos) — which is exactly the population we're escalating. GPT-4o would work equally well; not worth adding a second provider relationship for a marginal accuracy delta.
+
+**Cost math at scale:**
+
+- High-confidence cases (estimated ~90% of logs in early dogfooding) stay at Flash pricing — roughly $0.0003/photo.
+- Low-confidence escalations (~10%) add one Pro call — roughly $0.015/photo on top.
+- Brand-routed cases skip the model entirely for nutrition — free after the initial ID.
+- Blended cost per meal analysis settles around $0.001–$0.002. A user logging 5 meals/day costs the business under $0.01/day in model spend, well below any reasonable price point.
+
+Outlier predictions never reach the user unflagged, and the common case stays cheap and fast.
 
 ### Summary of Track tab architecture
 

@@ -12,7 +12,7 @@ enum GeminiPrompt {
         {
           "name": "Specific food item name suitable for a USDA FoodData Central search (e.g., 'grilled chicken breast, skinless', 'jasmine rice, cooked', 'asparagus, steamed')",
           "portion_amount": number,
-          "portion_unit": "g | oz | cup | slice | piece | tbsp | tsp | ml",
+          "portion_unit": "EXACTLY ONE of these strings: g, oz, cup, slice, piece, tbsp, tsp, ml. Never use other words (no 'bun', 'patty', 'scoop', 'bottle', 'can'). If the item is countable but doesn't fit those units, use 'piece'.",
           "portion_description": "Human-readable portion (e.g., '6 oz', '1 cup cooked', '2 slices')",
           "preparation": "Cooking method if identifiable (e.g., 'grilled', 'pan-fried in oil', 'steamed', 'raw')",
           "brand_cue": "Name of the restaurant chain or brand IF you see any of: a visible logo, branded cup/bowl/wrapper/bag, branded napkin, distinctive chain-specific packaging, a branded receipt, a menu card in frame, OR if the presentation matches a chain's signature styling (Chipotle foil-wrapped burrito in branded bowl, Shake Shack burger in kraft-paper tray with their logo, Starbucks cup, McDonald's red box, Panera ceramic bowl, BJ's pizookie in skillet, Chicago Fire deep-dish pan). Return just the chain's common name like 'Chipotle', 'McDonald''s', 'Starbucks', 'Shake Shack', 'Wendy''s', 'Panera', 'Chicago Fire', 'BJ''s'. Otherwise null.",

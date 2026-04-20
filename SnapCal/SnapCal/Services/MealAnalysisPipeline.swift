@@ -14,33 +14,42 @@ actor MealAnalysisPipeline {
     func analyze(imageJPEG: Data) async throws -> MealEntry {
         let identification = try await gemini.identifyMeal(imageJPEG: imageJPEG)
 
-        var mealItems: [MealItem] = []
-        mealItems.reserveCapacity(identification.items.count)
-
-        for identified in identification.items {
-            let grams = normalizedGrams(for: identified)
-            let food = try? await usda.bestMatch(for: identified.name)
-            let nutrition: NutritionFacts
-            if let food {
-                nutrition = await usda.nutrition(for: food, gramsEstimate: grams)
-            } else {
-                nutrition = .zero
+        // USDA lookups run in parallel — network I/O dominates, and the actor
+        // is re-entrant while awaiting URLSession. Ordering preserved via index.
+        let usdaService = self.usda
+        let indexedItems: [(Int, MealItem)] = try await withThrowingTaskGroup(
+            of: (Int, MealItem).self
+        ) { group in
+            for (index, identified) in identification.items.enumerated() {
+                let grams = self.normalizedGrams(for: identified)
+                group.addTask {
+                    let food = try? await usdaService.bestMatch(for: identified.name)
+                    let nutrition: NutritionFacts
+                    if let food {
+                        nutrition = await usdaService.nutrition(for: food, gramsEstimate: grams)
+                    } else {
+                        nutrition = .zero
+                    }
+                    let item = MealItem(
+                        name: identified.name,
+                        portionAmount: identified.portionAmount,
+                        portionUnit: identified.portionUnit,
+                        gramsEstimate: grams,
+                        usdaFdcId: food?.fdcId,
+                        usdaDescription: food?.description,
+                        nutrition: nutrition,
+                        itemConfidence: identified.itemConfidence,
+                        preparation: identified.preparation,
+                        brandCue: identified.brandCue
+                    )
+                    return (index, item)
+                }
             }
-            mealItems.append(
-                MealItem(
-                    name: identified.name,
-                    portionAmount: identified.portionAmount,
-                    portionUnit: identified.portionUnit,
-                    gramsEstimate: grams,
-                    usdaFdcId: food?.fdcId,
-                    usdaDescription: food?.description,
-                    nutrition: nutrition,
-                    itemConfidence: identified.itemConfidence,
-                    preparation: identified.preparation,
-                    brandCue: identified.brandCue
-                )
-            )
+            var pairs: [(Int, MealItem)] = []
+            for try await pair in group { pairs.append(pair) }
+            return pairs
         }
+        let mealItems = indexedItems.sorted { $0.0 < $1.0 }.map(\.1)
 
         return MealEntry(
             mealName: identification.mealName,

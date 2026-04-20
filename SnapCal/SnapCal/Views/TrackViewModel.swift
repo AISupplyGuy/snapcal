@@ -12,26 +12,40 @@ final class TrackViewModel {
     }
 
     private(set) var state: State = .idle
+    private(set) var capturedPhoto: UIImage?
     private var originalMeal: MealEntry?
+    private var runningTask: Task<Void, Never>?
 
     func analyze(image: UIImage) {
+        capturedPhoto = image
         state = .analyzing
         guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
             state = .failed("Couldn't encode photo.")
             return
         }
-        Task {
+        runningTask?.cancel()
+        runningTask = Task {
             do {
                 let gemini = try GeminiService()
                 let usda = try USDAService()
                 let pipeline = MealAnalysisPipeline(gemini: gemini, usda: usda)
                 let meal = try await pipeline.analyze(imageJPEG: jpeg)
+                if Task.isCancelled { return }
                 self.originalMeal = meal
                 self.state = .ready(meal)
             } catch {
+                if Task.isCancelled { return }
                 self.state = .failed(error.localizedDescription)
             }
         }
+    }
+
+    func reset() {
+        runningTask?.cancel()
+        runningTask = nil
+        capturedPhoto = nil
+        originalMeal = nil
+        state = .idle
     }
 
     // Called when user accepts corrections from the meal card slider(s).

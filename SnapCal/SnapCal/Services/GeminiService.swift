@@ -62,16 +62,35 @@ actor GeminiService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await session.data(for: request)
-        let rawBody = String(data: data, encoding: .utf8) ?? ""
+        // Retry on 503 (model overloaded) and 429 (rate limited) with exponential backoff.
+        // These are Google-side transient conditions; a short backoff usually clears.
+        let maxAttempts = 3
+        var lastStatus = -1
+        var lastBody = ""
+        for attempt in 1...maxAttempts {
+            let (data, response) = try await session.data(for: request)
+            let rawBody = String(data: data, encoding: .utf8) ?? ""
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            #if DEBUG
+            print("[Gemini] attempt=\(attempt) status=\(status)")
+            #endif
+            if (200..<300).contains(status) {
+                return try Self.parseResponse(data: data, rawBody: rawBody)
+            }
+            lastStatus = status
+            lastBody = rawBody
+            let retryable = (status == 503 || status == 429 || status == 500 || status == 502)
+            if !retryable || attempt == maxAttempts { break }
+            let delayMs = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000 / 2 // 1s, 2s
+            try await Task.sleep(nanoseconds: delayMs)
+        }
+        throw GeminiError.httpError(status: lastStatus, body: lastBody)
+    }
+
+    private static func parseResponse(data: Data, rawBody: String) throws -> GeminiMealResponse {
         #if DEBUG
-        print("[Gemini] status=\((response as? HTTPURLResponse)?.statusCode ?? -1)")
         print("[Gemini] body=\(rawBody)")
         #endif
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            throw GeminiError.httpError(status: status, body: rawBody)
-        }
 
         let envelope = try JSONDecoder().decode(GeminiEnvelope.self, from: data)
         guard let text = envelope.candidates.first?.content.parts.first?.text, !text.isEmpty else {
