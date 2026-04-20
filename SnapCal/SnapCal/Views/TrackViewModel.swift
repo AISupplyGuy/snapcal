@@ -27,8 +27,18 @@ final class TrackViewModel {
         runningTask = Task {
             do {
                 let gemini = try GeminiService()
-                let usda = try USDAService()
-                let pipeline = MealAnalysisPipeline(gemini: gemini, usda: usda)
+
+                // Build the router. USDA is always present; chain-menu only wires up
+                // if SUPABASE_URL + SUPABASE_ANON_KEY are configured in the scheme.
+                var sources: [NutritionSource] = []
+                if let chain = try? ChainMenuSource() {
+                    sources.append(chain)
+                }
+                let usdaService = try USDAService()
+                sources.append(USDASource(service: usdaService))
+                let router = NutritionRouter(sources: sources)
+
+                let pipeline = MealAnalysisPipeline(gemini: gemini, router: router)
                 let meal = try await pipeline.analyze(imageJPEG: jpeg)
                 if Task.isCancelled { return }
                 self.originalMeal = meal

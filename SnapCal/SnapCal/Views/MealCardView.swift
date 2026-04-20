@@ -159,6 +159,18 @@ private struct ItemRow: View {
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
+                    if let source = item.matchedSourceId, source != "usda" {
+                        HStack(spacing: 3) {
+                            Image(systemName: "storefront.fill")
+                                .font(.system(size: 9))
+                            Text("via \(source)")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundStyle(SCTheme.Colors.accentPink)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(SCTheme.Colors.accentPink.opacity(0.12), in: Capsule())
+                    }
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 0) {

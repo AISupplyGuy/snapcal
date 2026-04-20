@@ -46,7 +46,9 @@ struct MealItem: Codable, Sendable, Identifiable {
     var portionUnit: PortionUnit
     var gramsEstimate: Double
     var usdaFdcId: Int?
-    var usdaDescription: String?
+    var usdaDescription: String?      // display name from the matched source (USDA desc, chain name, etc.)
+    var matchedSourceId: String?      // "usda", "chipotle", "openfoodfacts", nil if no match
+    var matchConfidence: Double?      // 0–1 from the NutritionSource
     var nutrition: NutritionFacts
     var itemConfidence: Double
     var preparation: String?
@@ -60,6 +62,8 @@ struct MealItem: Codable, Sendable, Identifiable {
         gramsEstimate: Double,
         usdaFdcId: Int?,
         usdaDescription: String?,
+        matchedSourceId: String? = nil,
+        matchConfidence: Double? = nil,
         nutrition: NutritionFacts,
         itemConfidence: Double,
         preparation: String? = nil,
@@ -72,6 +76,8 @@ struct MealItem: Codable, Sendable, Identifiable {
         self.gramsEstimate = gramsEstimate
         self.usdaFdcId = usdaFdcId
         self.usdaDescription = usdaDescription
+        self.matchedSourceId = matchedSourceId
+        self.matchConfidence = matchConfidence
         self.nutrition = nutrition
         self.itemConfidence = itemConfidence
         self.preparation = preparation
