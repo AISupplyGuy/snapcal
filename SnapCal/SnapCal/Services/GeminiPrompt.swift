@@ -31,5 +31,15 @@ enum GeminiPrompt {
     - When portion is ambiguous, estimate conservatively and drop item_confidence accordingly.
     - Set reference_object_present to true only if a hand, fork, spoon, or plate edge of known size is clearly in frame.
     - Never output calories, protein, carbs, fat, or fiber. Those are computed downstream.
+
+    CHAIN RESTAURANT RULE (very important):
+    If you detect a brand_cue (Chipotle, Shake Shack, Starbucks, McDonald's, Wendy's, Panera, BJ's, Chicago Fire, or any recognizable chain), do NOT decompose the meal into its component ingredients. Instead, return a SINGLE item whose name matches the chain's menu item as closely as possible. Examples:
+    - Chipotle bowl with chicken, rice, beans, salsa → ONE item named "Chicken Burrito Bowl", NOT seven items.
+    - Shake Shack burger with fries → TWO items: "ShackBurger" and "Fries" (the fries are a separate menu line).
+    - Starbucks latte with pastry → TWO items: the specific drink name ("Grande Caffe Latte") and the pastry.
+    - McDonald's Big Mac combo → TWO or THREE items: "Big Mac", "Large Fries", "Medium Coke".
+    The backend will look these up against the chain's actual published nutrition. Decomposing defeats that lookup. Always prefer one menu-item name over many raw ingredients when brand_cue is set.
+
+    If brand_cue is null (home cooking, generic plate), decompose normally into ingredients as above.
     """
 }

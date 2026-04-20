@@ -82,7 +82,7 @@ actor USDAService {
                 .lowercased()
                 .split(whereSeparator: { !$0.isLetter })
                 .map(String.init)
-                .filter { $0.count > 2 }
+                .filter { $0.count > 2 && !Self.stopwords.contains($0) }
         )
         // Rank by (1) token coverage in description — how many query words appear,
         // (2) dataType tier, (3) original USDA relevance order. This bubbles up
@@ -113,35 +113,30 @@ actor USDAService {
         }
     }
 
-    // Strip preparation suffixes and trailing descriptors that hurt USDA search quality.
-    // "cherry tomato, raw"         → "cherry tomato"
-    // "grilled chicken breast, skinless" → "chicken breast"
-    // "jasmine rice, cooked"       → "rice"
+    // Light normalization only. Earlier version stripped prep words ("grilled",
+    // "cooked") aggressively, but that made "grilled chicken" search as just
+    // "chicken" — which returned "Chicken spread" as the top USDA match. USDA
+    // actually has entries like "Chicken, breast, cooked, grilled" where the
+    // prep word is part of the description — keeping it helps, not hurts.
+    // Only strip purely cosmetic modifiers that don't affect nutrition.
     private static func normalizeQuery(_ raw: String) -> String {
-        let prepWords: Set<String> = [
-            "raw", "cooked", "boiled", "steamed", "grilled", "fried", "pan-fried",
-            "baked", "roasted", "sauteed", "sautéed", "braised", "poached",
-            "skinless", "boneless", "diced", "sliced", "chopped", "shredded"
+        let cosmeticWords: Set<String> = [
+            "fresh", "organic", "natural", "homemade", "artisanal"
         ]
-        // Split on commas, drop any segment that is purely preparation words.
-        let segments = raw
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { segment in
-                let tokens = segment.lowercased().split(separator: " ").map(String.init)
-                return !tokens.allSatisfy { prepWords.contains($0) }
-            }
-
-        // Also drop individual preparation words that survived the first pass.
-        let cleaned = segments.joined(separator: " ")
+        return raw
             .split(separator: " ")
             .map(String.init)
-            .filter { !prepWords.contains($0.lowercased()) }
+            .filter { !cosmeticWords.contains($0.lowercased()) }
             .joined(separator: " ")
-
-        let trimmed = cleaned.trimmingCharacters(in: .whitespaces)
-        return trimmed.isEmpty ? raw : trimmed
+            .trimmingCharacters(in: .whitespaces)
     }
+
+    // Stopwords that shouldn't contribute to token-coverage scoring.
+    // "and", "the", "with" can appear in almost any description and inflate
+    // coverage scores for unrelated foods.
+    private static let stopwords: Set<String> = [
+        "and", "the", "with", "from", "into", "for", "plus", "some", "any"
+    ]
 
     // Compute nutrition for a given item at a given portion size.
     // `gramsEstimate` is the normalized portion weight in grams.
