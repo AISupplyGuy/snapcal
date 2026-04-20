@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+results/*.csv
+!results/.gitkeep
+meals/*
+!meals/.gitkeep

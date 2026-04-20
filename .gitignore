@@ -1,0 +1,68 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Secrets & env
+.env
+.env.local
+.env.*.local
+*.env
+!.env.example
+!.env.*.example
+
+# Xcode
+build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# CocoaPods / Carthage (future-proof)
+Pods/
+Carthage/Build/
+
+# Python (Week 0 accuracy test uses Python)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Scaffold leftovers from initial Xcode project setup
+_scaffold/
+
+# Week 0 test results — regenerable from scripts, large
+week0-accuracy-test/results/
+
+# Waitlist local builds
+waitlist/.next/
+waitlist/node_modules/
