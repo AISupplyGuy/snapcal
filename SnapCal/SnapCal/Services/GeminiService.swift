@@ -29,12 +29,13 @@ actor GeminiService {
     init(
         apiKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"]
             ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String),
-        model: String = "gemini-2.5-flash",
+        model: String? = ProcessInfo.processInfo.environment["GEMINI_MODEL"]
+            ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_MODEL") as? String),
         session: URLSession = .shared
     ) throws {
         guard let key = apiKey, !key.isEmpty else { throw GeminiError.missingAPIKey }
         self.apiKey = key
-        self.model = model
+        self.model = (model?.isEmpty == false ? model : nil) ?? "gemini-3-flash-preview"
         self.session = session
     }
 
@@ -61,29 +62,42 @@ actor GeminiService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 120  // photo analysis can take 30-60s end-to-end
 
-        // Retry on 503 (model overloaded) and 429 (rate limited) with exponential backoff.
-        // These are Google-side transient conditions; a short backoff usually clears.
+        // Retry transient conditions with exponential backoff:
+        //   - HTTP 5xx / 429: Google-side overload
+        //   - URL timeouts / network lost: flaky connection or slow model cold start
         let maxAttempts = 3
         var lastStatus = -1
         var lastBody = ""
+        var lastURLError: Error?
         for attempt in 1...maxAttempts {
-            let (data, response) = try await session.data(for: request)
-            let rawBody = String(data: data, encoding: .utf8) ?? ""
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            #if DEBUG
-            print("[Gemini] attempt=\(attempt) status=\(status)")
-            #endif
-            if (200..<300).contains(status) {
-                return try Self.parseResponse(data: data, rawBody: rawBody)
+            do {
+                let (data, response) = try await session.data(for: request)
+                let rawBody = String(data: data, encoding: .utf8) ?? ""
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                #if DEBUG
+                print("[Gemini] attempt=\(attempt) status=\(status)")
+                #endif
+                if (200..<300).contains(status) {
+                    return try Self.parseResponse(data: data, rawBody: rawBody)
+                }
+                lastStatus = status
+                lastBody = rawBody
+                lastURLError = nil
+                let retryable = (status == 503 || status == 429 || status == 500 || status == 502)
+                if !retryable || attempt == maxAttempts { break }
+            } catch let err as URLError where [.timedOut, .networkConnectionLost, .notConnectedToInternet].contains(err.code) {
+                #if DEBUG
+                print("[Gemini] attempt=\(attempt) URLError=\(err.code.rawValue)")
+                #endif
+                lastURLError = err
+                if attempt == maxAttempts { throw err }
             }
-            lastStatus = status
-            lastBody = rawBody
-            let retryable = (status == 503 || status == 429 || status == 500 || status == 502)
-            if !retryable || attempt == maxAttempts { break }
-            let delayMs = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000 / 2 // 1s, 2s
-            try await Task.sleep(nanoseconds: delayMs)
+            let delayNs = UInt64(pow(2.0, Double(attempt))) * 500_000_000 // 1s, 2s, 4s
+            try await Task.sleep(nanoseconds: delayNs)
         }
+        if let urlErr = lastURLError { throw urlErr }
         throw GeminiError.httpError(status: lastStatus, body: lastBody)
     }
 
