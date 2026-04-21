@@ -8,23 +8,67 @@ struct TodayView: View {
     let onTapCamera: () -> Void
     let lidarEnabled: Bool
     private let diary = MealDiary.shared
+    private let goalsStore = GoalsStore.shared
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        List {
+            Section {
                 header
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+
+            Section {
                 dailyRing
-                if diary.todaysMeals.isEmpty {
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
+
+            if diary.todaysMeals.isEmpty {
+                Section {
                     emptyState
-                } else {
-                    mealsList
                 }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 20))
+            } else {
+                Section {
+                    Text("Meals")
+                        .font(SCTheme.Type_.kicker())
+                        .tracking(1.2)
+                        .foregroundStyle(.secondary)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 4, trailing: 20))
+
+                    ForEach(diary.todaysMeals) { meal in
+                        TodayMealRow(meal: meal)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    diary.delete(meal)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                }
+            }
+
+            Section {
                 snapCTA
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 24, trailing: 20))
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 1)
     }
 
     // MARK: Header
@@ -44,6 +88,7 @@ struct TodayView: View {
                 Spacer()
             }
         }
+        .padding(.top, 8)
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -56,12 +101,16 @@ struct TodayView: View {
 
     private var dailyRing: some View {
         let totals = diary.dailyTotals
+        let goals = goalsStore.goals
         return VStack(spacing: 16) {
             ZStack {
                 DailyRings(
                     calories: totals.calories,
                     protein: totals.proteinGrams,
-                    carbs: totals.carbGrams
+                    carbs: totals.carbGrams,
+                    calorieTarget: goals.calories,
+                    proteinTarget: goals.proteinGrams,
+                    carbTarget: goals.carbGrams
                 )
                 .frame(width: 180, height: 180)
                 VStack(spacing: 0) {
@@ -74,6 +123,10 @@ struct TodayView: View {
                         .font(SCTheme.Type_.kicker())
                         .tracking(1.4)
                         .foregroundStyle(.secondary)
+                    Text("of \(Int(goals.calories))")
+                        .font(SCTheme.Type_.caption())
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -81,19 +134,19 @@ struct TodayView: View {
             HStack(spacing: 10) {
                 SCMacroChip(
                     label: "Protein",
-                    value: "\(Int(totals.proteinGrams))g",
+                    value: "\(Int(totals.proteinGrams))/\(Int(goals.proteinGrams))g",
                     tint: SCTheme.Colors.proteinBlue,
                     softBg: SCTheme.Colors.proteinSoft
                 )
                 SCMacroChip(
                     label: "Carbs",
-                    value: "\(Int(totals.carbGrams))g",
+                    value: "\(Int(totals.carbGrams))/\(Int(goals.carbGrams))g",
                     tint: SCTheme.Colors.carbGreen,
                     softBg: SCTheme.Colors.carbSoft
                 )
                 SCMacroChip(
                     label: "Fat",
-                    value: "\(Int(totals.fatGrams))g",
+                    value: "\(Int(totals.fatGrams))/\(Int(goals.fatGrams))g",
                     tint: SCTheme.Colors.accentOrange,
                     softBg: SCTheme.Colors.caloriesSoft
                 )
@@ -118,18 +171,6 @@ struct TodayView: View {
         }
         .padding(20)
         .scCardStyle()
-    }
-
-    private var mealsList: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Meals")
-                .font(SCTheme.Type_.kicker())
-                .tracking(1.2)
-                .foregroundStyle(.secondary)
-            ForEach(diary.todaysMeals) { meal in
-                TodayMealRow(meal: meal)
-            }
-        }
     }
 
     // MARK: CTA
@@ -188,18 +229,16 @@ private struct DailyRings: View {
     let protein: Double
     let carbs: Double
 
-    // Rough daily targets for visual progress only. Real targets come later with
-    // goals/onboarding; until then these give the rings somewhere to fill.
-    private let calorieTarget: Double = 2200
-    private let proteinTarget: Double = 150
-    private let carbTarget: Double = 250
+    let calorieTarget: Double
+    let proteinTarget: Double
+    let carbTarget: Double
 
     var body: some View {
         ZStack {
-            Ring(progress: calories / calorieTarget, color: SCTheme.Colors.accentPink, thickness: 18)
-            Ring(progress: protein / proteinTarget, color: SCTheme.Colors.proteinBlue, thickness: 18)
+            Ring(progress: calories / max(calorieTarget, 1), color: SCTheme.Colors.accentPink, thickness: 18)
+            Ring(progress: protein / max(proteinTarget, 1), color: SCTheme.Colors.proteinBlue, thickness: 18)
                 .padding(20)
-            Ring(progress: carbs / carbTarget, color: SCTheme.Colors.carbGreen, thickness: 18)
+            Ring(progress: carbs / max(carbTarget, 1), color: SCTheme.Colors.carbGreen, thickness: 18)
                 .padding(40)
         }
     }

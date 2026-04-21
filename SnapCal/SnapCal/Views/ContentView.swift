@@ -6,6 +6,21 @@ struct ContentView: View {
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     var body: some View {
+        TabView {
+            todayTab
+                .tabItem {
+                    Label("Today", systemImage: "circle.grid.cross.fill")
+                }
+
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.crop.circle")
+                }
+        }
+        .tint(SCTheme.Colors.accentPink)
+    }
+
+    private var todayTab: some View {
         NavigationStack {
             Group {
                 switch viewModel.state {

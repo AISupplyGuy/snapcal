@@ -71,4 +71,25 @@ final class MealDiary {
     var dailyTotals: NutritionFacts {
         todaysMeals.map(\.totals).reduce(.zero, +)
     }
+
+    // Remove a meal from today's list and rewrite meals.jsonl without that
+    // entry. Older days are preserved. Used by swipe-to-delete on Today.
+    func delete(_ meal: MealEntry) {
+        guard Calendar.current.isDateInToday(meal.capturedAt) else { return }
+
+        todaysMeals.removeAll { $0.id == meal.id }
+
+        guard let data = try? Data(contentsOf: fileURL) else { return }
+        let lines = data.split(separator: 0x0A, omittingEmptySubsequences: true)
+        var kept = Data()
+        for line in lines {
+            if let entry = try? decoder.decode(MealEntry.self, from: Data(line)),
+               entry.id == meal.id {
+                continue
+            }
+            kept.append(Data(line))
+            kept.append(0x0A)
+        }
+        try? kept.write(to: fileURL, options: .atomic)
+    }
 }
