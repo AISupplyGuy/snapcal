@@ -4,6 +4,8 @@ struct MealCardView: View {
     @State var meal: MealEntry
     let photo: UIImage?
     let onCommit: (MealEntry) -> Void
+    let onDietaryVariantChange: (MealItem, DietaryVariantPreference, PlateContext) async -> NutritionMatch?
+    let onSizeVariantChange: (MealItem, String, PlateContext) async -> NutritionMatch?
 
     var body: some View {
         ScrollView {
@@ -51,6 +53,13 @@ struct MealCardView: View {
     }
 
     // MARK: Totals card
+    //
+    // Derive totals from items on every render so the slider updates feel live.
+    // `meal.totals` is still kept in sync at commit time for the persisted copy.
+
+    private var liveTotals: NutritionFacts {
+        meal.items.map(\.nutrition).reduce(.zero, +)
+    }
 
     private var totalsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -60,12 +69,16 @@ struct MealCardView: View {
                         .font(SCTheme.Type_.kicker())
                         .tracking(1.0)
                         .foregroundStyle(SCTheme.Colors.accentOrange)
-                    Text("\(Int(meal.totals.calories))")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
-                        .foregroundStyle(SCTheme.Gradients.heroText)
-                    + Text(" kcal")
-                        .font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.secondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("\(Int(liveTotals.calories))")
+                            .font(.system(size: 44, weight: .heavy, design: .rounded))
+                            .foregroundStyle(SCTheme.Gradients.heroText)
+                            .contentTransition(.numericText(value: liveTotals.calories))
+                            .animation(.easeOut(duration: 0.15), value: liveTotals.calories)
+                        Text("kcal")
+                            .font(.system(size: 22, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 ConfidenceBadge(confidence: meal.overallConfidence)
@@ -74,19 +87,19 @@ struct MealCardView: View {
             HStack(spacing: 10) {
                 SCMacroChip(
                     label: "Protein",
-                    value: "\(Int(meal.totals.proteinGrams))g",
+                    value: "\(Int(liveTotals.proteinGrams))g",
                     tint: SCTheme.Colors.proteinBlue,
                     softBg: SCTheme.Colors.proteinSoft
                 )
                 SCMacroChip(
                     label: "Carbs",
-                    value: "\(Int(meal.totals.carbGrams))g",
+                    value: "\(Int(liveTotals.carbGrams))g",
                     tint: SCTheme.Colors.carbGreen,
                     softBg: SCTheme.Colors.carbSoft
                 )
                 SCMacroChip(
                     label: "Fat",
-                    value: "\(Int(meal.totals.fatGrams))g",
+                    value: "\(Int(liveTotals.fatGrams))g",
                     tint: SCTheme.Colors.accentOrange,
                     softBg: SCTheme.Colors.caloriesSoft
                 )
@@ -105,16 +118,26 @@ struct MealCardView: View {
                 .tracking(1.2)
                 .foregroundStyle(.secondary)
             ForEach($meal.items) { $item in
-                ItemRow(item: $item)
+                ItemRow(
+                    item: $item,
+                    plateContext: meal.plateContext,
+                    onDietaryVariantChange: onDietaryVariantChange,
+                    onSizeVariantChange: onSizeVariantChange
+                )
             }
         }
     }
 
     // MARK: Save
+    //
+    // Items are already live-scaled from baselinePer100g as the user drags.
+    // Save just sync's the stored `totals` and hands the meal up for persistence.
 
     private var saveButton: some View {
         Button {
-            recalculateAndCommit()
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            meal.recomputeTotals()
+            onCommit(meal)
         } label: {
             Label("Save meal", systemImage: "checkmark.circle.fill")
                 .scCTAStyle()
@@ -122,28 +145,18 @@ struct MealCardView: View {
         .buttonStyle(.plain)
         .padding(.top, 4)
     }
-
-    // MARK: Math
-
-    private func recalculateAndCommit() {
-        for idx in meal.items.indices {
-            let per100 = unscaledPer100g(of: meal.items[idx])
-            meal.items[idx].nutrition = per100.scaled(by: meal.items[idx].gramsEstimate / 100.0)
-        }
-        meal.recomputeTotals()
-        onCommit(meal)
-    }
-
-    private func unscaledPer100g(of item: MealItem) -> NutritionFacts {
-        guard item.gramsEstimate > 0 else { return .zero }
-        return item.nutrition.scaled(by: 100.0 / item.gramsEstimate)
-    }
 }
 
 // MARK: - Item row
 
 private struct ItemRow: View {
     @Binding var item: MealItem
+    let plateContext: PlateContext
+    let onDietaryVariantChange: (MealItem, DietaryVariantPreference, PlateContext) async -> NutritionMatch?
+    let onSizeVariantChange: (MealItem, String, PlateContext) async -> NutritionMatch?
+    @State private var isVariantLoading = false
+    @State private var isGlutenFreeSelected = false
+    @State private var selectedSizeKey: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -183,6 +196,69 @@ private struct ItemRow: View {
                 }
             }
 
+            if showsGlutenVariantControl {
+                Button {
+                    if isVariantLoading { return }
+                    isGlutenFreeSelected.toggle()
+                    let preference: DietaryVariantPreference = isGlutenFreeSelected ? .glutenFree : .notGlutenFree
+                    item.dietaryVariantPreference = preference
+                    saveVariantPreference(preference)
+                    Task {
+                        await applyDietaryVariant(preference)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: isGlutenFreeSelected ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(isGlutenFreeSelected ? SCTheme.Colors.carbGreen : .secondary)
+                        Text("Gluten free")
+                            .font(SCTheme.Type_.caption())
+                            .foregroundStyle(.secondary)
+                        if isVariantLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+
+            if !sizeOptions.isEmpty {
+                HStack(spacing: 8) {
+                    Text("Size")
+                        .font(SCTheme.Type_.caption())
+                        .foregroundStyle(.secondary)
+                    ForEach(sizeOptions, id: \.key) { option in
+                        Button {
+                            if isVariantLoading { return }
+                            selectedSizeKey = option.key
+                            saveSizePreference(option.key)
+                            Task {
+                                await applySizeVariant(option.key)
+                            }
+                        } label: {
+                            Text(option.label)
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(selectedSizeKey == option.key ? .white : .secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    Capsule().fill(
+                                        selectedSizeKey == option.key
+                                        ? SCTheme.Colors.accentPink
+                                        : SCTheme.Colors.accentPink.opacity(0.14)
+                                    )
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if isVariantLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+            }
+
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text("\(Int(item.gramsEstimate))g")
@@ -198,10 +274,24 @@ private struct ItemRow: View {
                 }
                 Slider(value: $item.gramsEstimate, in: 5...1000, step: 5)
                     .tint(SCTheme.Colors.accentOrange)
+                    .onChange(of: item.gramsEstimate) { _, newGrams in
+                        item.nutrition = item.baselinePer100g.scaled(by: newGrams / 100.0)
+                    }
             }
         }
         .padding(16)
         .scCardStyle()
+        .onAppear {
+            guard showsGlutenVariantControl else { return }
+            let pref = item.dietaryVariantPreference ?? savedVariantPreference
+            item.dietaryVariantPreference = pref
+            isGlutenFreeSelected = (pref == .glutenFree)
+        }
+        .onAppear {
+            guard !sizeOptions.isEmpty else { return }
+            let pref = savedSizePreference ?? ChainVariantSupport.selectedSizeKey(for: item) ?? sizeOptions.first?.key
+            selectedSizeKey = pref
+        }
     }
 
     private func macroTag(_ letter: String, _ grams: Int, tint: Color) -> some View {
@@ -213,6 +303,93 @@ private struct ItemRow: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
         .background(tint.opacity(0.12), in: Capsule())
+    }
+
+    private var showsGlutenVariantControl: Bool {
+        guard item.matchedSourceId == "bjs" else { return false }
+        let combined = "\(item.name) \(item.usdaDescription ?? "")".lowercased()
+        return combined.contains("pizookie")
+    }
+
+    private var sizeOptions: [ChainSizeOption] {
+        ChainVariantSupport.sizeOptions(for: item)
+    }
+
+    private var savedVariantPreference: DietaryVariantPreference {
+        guard let raw = UserDefaults.standard.string(forKey: variantDefaultsKey),
+              let pref = DietaryVariantPreference(rawValue: raw) else {
+            return .notGlutenFree
+        }
+        return pref
+    }
+
+    private var variantDefaultsKey: String {
+        "dietaryVariant.bjs.pizookie"
+    }
+
+    private var sizeDefaultsKey: String? {
+        ChainVariantSupport.preferenceKey(for: item)
+    }
+
+    private func saveVariantPreference(_ preference: DietaryVariantPreference) {
+        UserDefaults.standard.set(preference.rawValue, forKey: variantDefaultsKey)
+    }
+
+    private var savedSizePreference: String? {
+        guard let key = sizeDefaultsKey else { return nil }
+        return UserDefaults.standard.string(forKey: key)
+    }
+
+    private func saveSizePreference(_ sizeKey: String) {
+        guard let key = sizeDefaultsKey else { return }
+        UserDefaults.standard.set(sizeKey, forKey: key)
+    }
+
+    @MainActor
+    private func applyDietaryVariant(_ preference: DietaryVariantPreference) async {
+        guard preference != .unknown else { return }
+        if isVariantLoading { return }
+        isVariantLoading = true
+        defer { isVariantLoading = false }
+
+        guard let match = await onDietaryVariantChange(item, preference, plateContext) else { return }
+        let baselinePer100g: NutritionFacts = item.gramsEstimate > 0
+            ? match.nutrition.scaled(by: 100.0 / item.gramsEstimate)
+            : match.nutrition
+
+        item.usdaFdcId = {
+            guard match.sourceId == "usda",
+                  let ext = match.externalId, let id = Int(ext) else { return nil }
+            return id
+        }()
+        item.usdaDescription = match.displayName
+        item.matchedSourceId = match.sourceId
+        item.matchConfidence = match.confidence
+        item.nutrition = match.nutrition
+        item.baselinePer100g = baselinePer100g
+    }
+
+    @MainActor
+    private func applySizeVariant(_ sizeKey: String) async {
+        if isVariantLoading { return }
+        isVariantLoading = true
+        defer { isVariantLoading = false }
+
+        guard let match = await onSizeVariantChange(item, sizeKey, plateContext) else { return }
+        let baselinePer100g: NutritionFacts = item.gramsEstimate > 0
+            ? match.nutrition.scaled(by: 100.0 / item.gramsEstimate)
+            : match.nutrition
+
+        item.usdaFdcId = {
+            guard match.sourceId == "usda",
+                  let ext = match.externalId, let id = Int(ext) else { return nil }
+            return id
+        }()
+        item.usdaDescription = match.displayName
+        item.matchedSourceId = match.sourceId
+        item.matchConfidence = match.confidence
+        item.nutrition = match.nutrition
+        item.baselinePer100g = baselinePer100g
     }
 }
 

@@ -5,14 +5,23 @@ import Foundation
 actor MealAnalysisPipeline {
     private let gemini: GeminiService
     private let router: NutritionRouter
+    private let chainMenu: ChainMenuSource?
 
-    init(gemini: GeminiService, router: NutritionRouter) {
+    init(gemini: GeminiService, router: NutritionRouter, chainMenu: ChainMenuSource? = nil) {
         self.gemini = gemini
         self.router = router
+        self.chainMenu = chainMenu
     }
 
     func analyze(imageJPEG: Data) async throws -> MealEntry {
-        let identification = try await gemini.identifyMeal(imageJPEG: imageJPEG)
+        // Pull the live list of chains we can actually resolve so Gemini knows
+        // which brand cues to collapse vs. decompose. Empty list → prompt
+        // tells Gemini to decompose everything.
+        let supportedChains = await chainMenu?.supportedChainNames() ?? []
+        let identification = try await gemini.identifyMeal(
+            imageJPEG: imageJPEG,
+            supportedChains: supportedChains
+        )
 
         // Per-item lookups run in parallel. The router handles source priority.
         let router = self.router
@@ -27,8 +36,10 @@ actor MealAnalysisPipeline {
                 )
                 group.addTask {
                     let match = await router.lookup(query: query)
-                    // Populate both the legacy usda fields (so existing display code works)
-                    // and the new matchedSourceId field (so new display code can differentiate).
+                    let matchedNutrition = match?.nutrition ?? .zero
+                    let baselinePer100g: NutritionFacts = grams > 0
+                        ? matchedNutrition.scaled(by: 100.0 / grams)
+                        : matchedNutrition
                     let item = MealItem(
                         name: identified.name,
                         portionAmount: identified.portionAmount,
@@ -42,7 +53,8 @@ actor MealAnalysisPipeline {
                         usdaDescription: match?.displayName,
                         matchedSourceId: match?.sourceId,
                         matchConfidence: match?.confidence,
-                        nutrition: match?.nutrition ?? .zero,
+                        nutrition: matchedNutrition,
+                        baselinePer100g: baselinePer100g,
                         itemConfidence: identified.itemConfidence,
                         preparation: identified.preparation,
                         brandCue: identified.brandCue

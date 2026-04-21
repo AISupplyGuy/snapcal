@@ -39,7 +39,13 @@ struct MealEntry: Codable, Sendable, Identifiable {
     }
 }
 
-struct MealItem: Codable, Sendable, Identifiable {
+enum DietaryVariantPreference: String, Codable, Sendable {
+    case unknown
+    case glutenFree
+    case notGlutenFree
+}
+
+struct MealItem: Codable, Sendable, Identifiable, Equatable {
     let id: UUID
     var name: String
     var portionAmount: Double
@@ -50,9 +56,14 @@ struct MealItem: Codable, Sendable, Identifiable {
     var matchedSourceId: String?      // "usda", "chipotle", "openfoodfacts", nil if no match
     var matchConfidence: Double?      // 0–1 from the NutritionSource
     var nutrition: NutritionFacts
+    // Per-100g baseline snapshot from the source at analysis time. The slider
+    // rescales `nutrition` live from this — so the kcal label tracks the thumb
+    // and we never round-trip through a lossy divide-then-multiply.
+    var baselinePer100g: NutritionFacts
     var itemConfidence: Double
     var preparation: String?
     var brandCue: String?
+    var dietaryVariantPreference: DietaryVariantPreference?
 
     init(
         id: UUID = UUID(),
@@ -65,9 +76,11 @@ struct MealItem: Codable, Sendable, Identifiable {
         matchedSourceId: String? = nil,
         matchConfidence: Double? = nil,
         nutrition: NutritionFacts,
+        baselinePer100g: NutritionFacts,
         itemConfidence: Double,
         preparation: String? = nil,
-        brandCue: String? = nil
+        brandCue: String? = nil,
+        dietaryVariantPreference: DietaryVariantPreference? = nil
     ) {
         self.id = id
         self.name = name
@@ -79,8 +92,10 @@ struct MealItem: Codable, Sendable, Identifiable {
         self.matchedSourceId = matchedSourceId
         self.matchConfidence = matchConfidence
         self.nutrition = nutrition
+        self.baselinePer100g = baselinePer100g
         self.itemConfidence = itemConfidence
         self.preparation = preparation
         self.brandCue = brandCue
+        self.dietaryVariantPreference = dietaryVariantPreference
     }
 }

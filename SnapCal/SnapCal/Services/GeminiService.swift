@@ -39,13 +39,13 @@ actor GeminiService {
         self.session = session
     }
 
-    func identifyMeal(imageJPEG: Data) async throws -> GeminiMealResponse {
+    func identifyMeal(imageJPEG: Data, supportedChains: [String] = []) async throws -> GeminiMealResponse {
         let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)")!
 
         let body: [String: Any] = [
             "contents": [[
                 "parts": [
-                    ["text": GeminiPrompt.mealIdentification],
+                    ["text": GeminiPrompt.mealIdentification(supportedChains: supportedChains)],
                     ["inline_data": [
                         "mime_type": "image/jpeg",
                         "data": imageJPEG.base64EncodedString()

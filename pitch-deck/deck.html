@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SnapCal — Pitch Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --bg-soft: #f2f2f7;
+    --card: #ffffff;
+    --ink: #1c1c1e;
+    --ink-soft: #3a3a3c;
+    --ink-muted: #6e6e73;
+    --ink-whisper: #aeaeb2;
+    --hair: rgba(60, 60, 67, 0.12);
+    --hair-soft: rgba(60, 60, 67, 0.06);
+
+    --move: #ff375f;
+    --move-soft: #ffe5eb;
+    --exercise: #30d158;
+    --exercise-soft: #dcfce1;
+    --stand: #00c7be;
+    --stand-soft: #cff8f5;
+    --calories: #ff6b35;
+    --calories-soft: #fff0e8;
+    --protein: #007aff;
+    --protein-soft: #e1efff;
+    --carbs: #34c759;
+    --carbs-soft: #dcfce1;
+    --fat: #ffcc00;
+    --purple: #bf5af2;
+    --purple-soft: #f3e5ff;
+
+    --ring-track: rgba(0, 0, 0, 0.06);
+
+    --radius-lg: 28px;
+    --radius-md: 20px;
+    --radius-sm: 14px;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 32px rgba(0, 0, 0, 0.05);
+    --shadow-cta: 0 2px 6px rgba(255, 55, 95, 0.25), 0 12px 28px rgba(255, 55, 95, 0.22);
+
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    --rounded: "SF Pro Rounded", "Nunito", system-ui, sans-serif;
+  }
+
+  @page { size: 1280px 720px; margin: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: var(--sf);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .slide {
+    width: 1280px;
+    height: 720px;
+    padding: 64px 80px;
+    page-break-after: always;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .slide:last-child { page-break-after: auto; }
+
+  .wordmark {
+    position: absolute;
+    top: 32px;
+    left: 80px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .wordmark .logo {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #ff6b35, #ff375f);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(255, 55, 95, 0.3);
+  }
+  .wordmark .logo::after {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 0 0 2.5px rgba(255,255,255,0.35);
+  }
+  .page-num {
+    position: absolute;
+    top: 32px;
+    right: 80px;
+    font-family: var(--rounded);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--ink-whisper);
+  }
+
+  h1.display {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 84px;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+    color: var(--ink);
+  }
+  h2.title {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+  h3 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  p.lede {
+    font-family: var(--sf);
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-muted);
+    max-width: 1000px;
+  }
+  p.body {
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+  }
+  .grad {
+    background: linear-gradient(120deg, #ff6b35 0%, #ff375f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--calories-soft);
+    color: var(--calories);
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+    align-self: flex-start;
+  }
+  .kicker.protein { background: var(--protein-soft); color: var(--protein); }
+  .kicker.carbs { background: var(--carbs-soft); color: var(--carbs); }
+  .kicker.exercise { background: var(--exercise-soft); color: var(--exercise); }
+  .kicker.stand { background: var(--stand-soft); color: var(--stand); }
+  .kicker.move { background: var(--move-soft); color: var(--move); }
+  .kicker.purple { background: var(--purple-soft); color: var(--purple); }
+  .kicker .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .body-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+  }
+
+  /* ——— Slide 1: Cover ——— */
+  .cover .body-wrap { justify-content: flex-end; }
+  .cover h1.display {
+    font-size: 128px;
+    letter-spacing: -0.045em;
+  }
+  .cover p.lede {
+    font-size: 26px;
+    margin-top: 22px;
+    max-width: 900px;
+  }
+  .cover .meta {
+    margin-top: 44px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-family: var(--rounded);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink-muted);
+  }
+  .cover .meta .sep {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--ink-whisper);
+  }
+  .cover .meta .apple {
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cover-rings {
+    position: absolute;
+    right: -120px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 680px;
+    height: 680px;
+    opacity: 0.9;
+  }
+
+  /* ——— Rings SVG ——— */
+  .rings-svg { display: block; }
+  .rings-svg circle {
+    transform: rotate(-90deg);
+    transform-origin: center;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .rings-svg .track { stroke: var(--ring-track); }
+
+  /* ——— Problem ——— */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+  }
+  .stat-card .val {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 42px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .stat-card.move .val { color: var(--move); }
+  .stat-card.calories .val { color: var(--calories); }
+  .stat-card.protein .val { color: var(--protein); }
+  .stat-card.purple .val { color: var(--purple); }
+  .stat-card .lbl {
+    font-family: var(--sf);
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--ink-muted);
+  }
+
+  /* ——— Solution loop ——— */
+  .loop {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr;
+    align-items: center;
+    gap: 0;
+    margin-top: 28px;
+  }
+  .loop-node {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .loop-node::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--accent);
+  }
+  .loop-node.n1 { --accent: var(--calories); }
+  .loop-node.n2 { --accent: var(--protein); }
+  .loop-node.n3 { --accent: var(--carbs); }
+  .loop-node .icon {
+    width: 44px; height: 44px;
+    border-radius: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    color: #fff;
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  .loop-node.n1 .icon { background: linear-gradient(135deg, #ffcc00, #ff6b35); }
+  .loop-node.n2 .icon { background: linear-gradient(135deg, #007aff, #bf5af2); }
+  .loop-node.n3 .icon { background: linear-gradient(135deg, #34c759, #30d158); }
+  .loop-node h4 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .loop-node p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.45;
+  }
+  .loop-arrow {
+    text-align: center;
+    color: var(--ink-whisper);
+    font-size: 24px;
+    font-family: var(--rounded);
+    font-weight: 900;
+  }
+  .pull {
+    margin-top: 24px;
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 19px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .pull .hl { color: var(--calories); }
+
+  /* ——— Phone mockups ——— */
+  .phones {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 16px;
+  }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .phone {
+    width: 230px;
+    height: 440px;
+    background: var(--card);
+    border-radius: 38px;
+    border: 1px solid var(--hair);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 24px 56px -20px rgba(0,0,0,0.22);
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 80px; height: 22px;
+    background: #000;
+    border-radius: 13px;
+    z-index: 3;
+  }
+  .phone .screen {
+    width: 100%; height: 100%;
+    background: linear-gradient(180deg, #fafafa 0%, #f2f2f7 100%);
+    border-radius: 26px;
+    padding: 38px 14px 14px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-head {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .phone-head .date {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 2px;
+  }
+  .phone-card {
+    background: #fff;
+    border: 1px solid var(--hair-soft);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .phone-ring-svg { width: 100px; height: 100px; display: block; margin: 0 auto 4px; }
+  .phone-totals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding-top: 6px;
+    border-top: 1px solid var(--hair-soft);
+  }
+  .phone-totals .cell { text-align: center; }
+  .phone-totals .v {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: -0.02em;
+  }
+  .phone-totals .v.cal { color: var(--calories); }
+  .phone-totals .v.pro { color: var(--protein); }
+  .phone-totals .v.car { color: var(--carbs); }
+  .phone-totals .l {
+    font-family: var(--rounded);
+    font-weight: 700;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .phone-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    padding: 6px 2px;
+    border-bottom: 1px solid var(--hair-soft);
+  }
+  .phone-row:last-child { border-bottom: 0; }
+  .phone-row .k { color: var(--ink-muted); font-weight: 500; }
+  .phone-row .v {
+    font-family: var(--rounded);
+    font-weight: 800;
+    color: var(--ink);
+    font-size: 12px;
+    letter-spacing: -0.01em;
+  }
+  .phone-row .v.cal { color: var(--calories); }
+  .phone-row .v.pro { color: var(--protein); }
+  .phone-row .v.car { color: var(--carbs); }
+  .phone-pill {
+    display: inline-block;
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-top: 6px;
+  }
+  .phone-pill.cal { background: var(--calories-soft); color: var(--calories); }
+  .phone-pill.pro { background: var(--protein-soft); color: var(--protein); }
+  .phone-pill.car { background: var(--carbs-soft); color: var(--carbs); }
+  .phone-title {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .phone-label {
+    text-align: center;
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .phone-label .sub {
+    font-family: var(--sf);
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--ink-muted);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ——— Pillars 3-col ——— */
+  .pillars {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin-top: 24px;
+  }
+  .pillar {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+    padding: 28px;
+  }
+  .pillar .pic {
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .pillar.c1 .pic { background: var(--calories-soft); color: var(--calories); }
+  .pillar.c2 .pic { background: var(--protein-soft); color: var(--protein); }
+  .pillar.c3 .pic { background: var(--exercise-soft); color: var(--exercise); }
+  .pillar h4 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 21px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .pillar p {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+  }
+
+  /* ——— Market: TAM bars ——— */
+  .tam-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+    margin-top: 40px;
+    height: 340px;
+  }
+  .tam-bar {
+    flex: 1;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--hair-soft);
+  }
+  .tam-bar.tam { background: var(--card); height: 100%; }
+  .tam-bar.sam {
+    background: linear-gradient(160deg, #ff6b35, #ff375f);
+    height: 66%;
+    color: #fff;
+    border-color: transparent;
+  }
+  .tam-bar.som {
+    background: var(--ink);
+    height: 26%;
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .tam-bar .lbl {
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .tam-bar .val {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 48px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .tam-bar.tam .val { color: var(--calories); }
+  .tam-bar .desc {
+    font-size: 13px;
+    margin-top: 10px;
+    line-height: 1.4;
+    opacity: 0.85;
+  }
+  .tam-bar.tam .desc { color: var(--ink-muted); opacity: 1; }
+
+  /* ——— Competition matrix ——— */
+  table.matrix {
+    width: 100%;
+    margin-top: 12px;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+    font-family: var(--sf);
+  }
+  table.matrix th {
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    text-align: center;
+    padding: 10px 12px;
+  }
+  table.matrix th:first-child { text-align: left; }
+  table.matrix td {
+    background: var(--card);
+    padding: 16px 12px;
+    text-align: center;
+    border-top: 1px solid var(--hair-soft);
+    border-bottom: 1px solid var(--hair-soft);
+  }
+  table.matrix td:first-child {
+    text-align: left;
+    border-left: 1px solid var(--hair-soft);
+    border-radius: 14px 0 0 14px;
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  table.matrix td:last-child {
+    border-right: 1px solid var(--hair-soft);
+    border-radius: 0 14px 14px 0;
+  }
+  table.matrix .yes {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 18px;
+    color: var(--exercise);
+  }
+  table.matrix .no {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 18px;
+    color: var(--ink-whisper);
+  }
+  table.matrix tr.us td {
+    background: linear-gradient(135deg, #fff0e8 0%, #ffe5eb 100%);
+    border-color: transparent;
+    box-shadow: var(--shadow-card);
+  }
+  table.matrix tr.us td:first-child {
+    color: var(--calories);
+  }
+  table.matrix tr.us .yes { color: var(--move); }
+
+  /* ——— Moat layers ——— */
+  .layers { margin-top: 8px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 18px;
+    align-items: center;
+    padding: 14px 22px;
+    background: var(--card);
+    border: 1px solid var(--hair-soft);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .layer .num {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--calories-soft);
+    color: var(--calories);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .layer:nth-child(2) .num { background: var(--protein-soft); color: var(--protein); }
+  .layer:nth-child(3) .num { background: var(--carbs-soft); color: var(--carbs); }
+  .layer:nth-child(4) .num { background: var(--stand-soft); color: var(--stand); }
+  .layer:nth-child(5) .num { background: var(--purple-soft); color: var(--purple); }
+  .layer h4 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .layer p {
+    font-size: 14px;
+    color: var(--ink-muted);
+    line-height: 1.45;
+  }
+
+  /* ——— Pricing ——— */
+  .pricing {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+  }
+  .price-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .price-card.pro {
+    background: linear-gradient(150deg, #ff375f 0%, #ff6b35 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: var(--shadow-cta);
+  }
+  .price-card.pro::before {
+    content: "";
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 280px; height: 280px;
+    background: rgba(255, 204, 0, 0.35);
+    border-radius: 50%;
+    filter: blur(40px);
+  }
+  .price-card .tag {
+    display: inline-block;
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--ink-muted);
+    margin-bottom: 14px;
+  }
+  .price-card.pro .tag {
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+  }
+  .price-card h3 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    color: inherit;
+    position: relative;
+  }
+  .price-card.pro h3 { color: #fff; }
+  .price-card .price {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .price-card .price small {
+    font-size: 16px;
+    font-weight: 700;
+    opacity: 0.65;
+  }
+  .price-card ul {
+    list-style: none;
+    position: relative;
+  }
+  .price-card li {
+    font-size: 15px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hair-soft);
+    color: var(--ink-soft);
+  }
+  .price-card.pro li {
+    border-bottom-color: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.95);
+  }
+  .price-card li:last-child { border-bottom: 0; }
+
+  /* ——— Roadmap ——— */
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .road-step {
+    background: var(--card);
+    border: 1px solid var(--hair-soft);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+  }
+  .road-step .when {
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--calories);
+    margin-bottom: 10px;
+  }
+  .road-step h4 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 20px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .road-step p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-muted);
+  }
+  .road-step.done {
+    background: linear-gradient(150deg, #34c759, #30d158);
+    border-color: transparent;
+    color: #fff;
+  }
+  .road-step.done .when { color: rgba(255,255,255,0.9); }
+  .road-step.done h4 { color: #fff; }
+  .road-step.done p { color: rgba(255,255,255,0.92); }
+  .road-step .num-big {
+    position: absolute;
+    top: 14px; right: 20px;
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.05em;
+    color: var(--bg-soft);
+    line-height: 1;
+  }
+  .road-step.done .num-big { color: rgba(255,255,255,0.18); }
+
+  /* ——— Two-col founder slide ——— */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 40px;
+    margin-top: 16px;
+    align-items: start;
+  }
+  .quote-card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+    position: relative;
+  }
+  .quote-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, #ff6b35, #ff375f);
+    border-radius: 4px 0 0 4px;
+  }
+  .quote-card .quote {
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+  .quote-card .attr {
+    font-family: var(--rounded);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .traction {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    border: 1px solid var(--hair-soft);
+    box-shadow: var(--shadow-card);
+  }
+  .traction .th {
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--calories);
+    margin-bottom: 14px;
+  }
+  .traction ul { list-style: none; }
+  .traction li {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--hair-soft);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .traction li:last-child { border-bottom: 0; }
+  .traction li .check {
+    color: var(--exercise);
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .traction li b {
+    font-family: var(--rounded);
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  /* ——— Ask (final) ——— */
+  .ask {
+    background: var(--bg);
+  }
+  .ask-hero {
+    background: linear-gradient(135deg, #ff375f 0%, #ff6b35 100%);
+    border-radius: var(--radius-lg);
+    padding: 44px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 60px -20px rgba(255, 55, 95, 0.5);
+  }
+  .ask-hero::before, .ask-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+  }
+  .ask-hero::before {
+    width: 300px; height: 300px;
+    background: rgba(255, 204, 0, 0.4);
+    top: -80px; left: -80px;
+  }
+  .ask-hero::after {
+    width: 280px; height: 280px;
+    background: rgba(191, 90, 242, 0.45);
+    bottom: -100px; right: -60px;
+  }
+  .ask-hero .inner { position: relative; }
+  .ask-hero .tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(12px);
+    font-family: var(--rounded);
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  .ask-hero h2 {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 72px;
+    letter-spacing: -0.035em;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .ask-hero p {
+    font-size: 19px;
+    max-width: 620px;
+    line-height: 1.5;
+    opacity: 0.95;
+  }
+  .use-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .use-card {
+    background: var(--card);
+    border: 1px solid var(--hair-soft);
+    border-radius: var(--radius-md);
+    padding: 22px;
+    box-shadow: var(--shadow-card);
+  }
+  .use-card .pct {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 34px;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .use-card.c1 .pct { color: var(--calories); }
+  .use-card.c2 .pct { color: var(--protein); }
+  .use-card.c3 .pct { color: var(--exercise); }
+  .use-card .lbl {
+    font-family: var(--rounded);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .use-card .desc {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.45;
+  }
+
+  .contact-row {
+    position: absolute;
+    bottom: 32px;
+    left: 80px;
+    right: 80px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--rounded);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+  }
+  .contact-row a { color: var(--protein); text-decoration: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ========= 1. COVER ========= -->
+<section class="slide cover">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">01 / 12</div>
+
+  <div class="body-wrap">
+    <div class="kicker"><span class="dot"></span>Pre-Seed · iOS · 2026</div>
+    <h1 class="display">
+      Track what you eat.<br>
+      <span class="grad">Cook what you have.</span>
+    </h1>
+    <p class="lede">The first iPhone app that closes the loop between meal tracking, pantry, and dinner — with calorie numbers you can actually trust.</p>
+    <div class="meta">
+      <span class="apple">
+        <svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor"><path d="M10.5 0c.08 1.02-.32 2.03-.97 2.77-.67.73-1.76 1.3-2.83 1.22-.1-1.01.37-2.06 1-2.75C8.4.5 9.52 0 10.5 0zM13.7 11.7c-.38.87-.57 1.26-1.05 2.03-.68 1.07-1.64 2.4-2.83 2.41-1.06.01-1.33-.7-2.77-.69-1.44.01-1.74.7-2.8.69-1.2-.01-2.1-1.22-2.78-2.29C.59 11.86.38 8.6 1.55 6.89c.83-1.23 2.15-1.95 3.4-1.95 1.26 0 2.05.7 3.09.7 1.01 0 1.63-.7 3.09-.7 1.12 0 2.3.62 3.14 1.67-2.76 1.53-2.3 5.55.43 5.09z"/></svg>
+        iOS 17+
+      </span>
+      <span class="sep"></span>
+      <span>Zach Elbode · Founder</span>
+      <span class="sep"></span>
+      <span>zachary.elbode@gmail.com</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 2. PROBLEM ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">02 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker move"><span class="dot"></span>The Problem</div>
+    <h2 class="title">Calorie apps lie.<br>Recipe apps don't know<br>what's in your fridge.</h2>
+    <p class="lede">People trying to eat better juggle two broken tools — a tracker that hallucinates numbers, and a recipe app that ignores what they already bought. Most quit within a month.</p>
+    <div class="problem-grid">
+      <div class="stat-card move">
+        <div class="val">73%</div>
+        <div class="lbl">MyFitnessPal users quit logging within 30 days</div>
+      </div>
+      <div class="stat-card calories">
+        <div class="val">±40%</div>
+        <div class="lbl">Typical calorie error on AI photo trackers that guess, not verify</div>
+      </div>
+      <div class="stat-card protein">
+        <div class="val">$1.5B</div>
+        <div class="lbl">US household food waste — people forget what they already own</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="val">2</div>
+        <div class="lbl">Apps required for what should be one workflow today</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 3. SOLUTION ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">03 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker"><span class="dot"></span>The Solution</div>
+    <h2 class="title">One app. One loop. <span class="grad">Three taps.</span></h2>
+    <p class="lede">Snap a meal to log it. Scan a receipt to stock your pantry. Get recipes from what's in the kitchen — then tap once to log what you cooked.</p>
+    <div class="loop">
+      <div class="loop-node n1">
+        <div class="icon">01</div>
+        <h4>Snap</h4>
+        <p>Photo → AI identifies → USDA verifies calories and macros in seconds.</p>
+      </div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-node n2">
+        <div class="icon">02</div>
+        <h4>Stock</h4>
+        <p>Receipt scan OCRs the whole haul into your pantry, with expiration dates.</p>
+      </div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-node n3">
+        <div class="icon">03</div>
+        <h4>Cook</h4>
+        <p>AI recipes from what you own. One tap to log the meal you just cooked.</p>
+      </div>
+    </div>
+    <p class="pull">The wedge: a seamless handoff between <span class="hl">tracking</span> and <span class="hl">cooking</span>. No other app does both — and none of them verify their numbers.</p>
+  </div>
+</section>
+
+<!-- ========= 4. PRODUCT ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">04 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker protein"><span class="dot"></span>The Product</div>
+    <h2 class="title">Built iOS-native. Built for speed.</h2>
+    <div class="phones">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="phone-head">
+              <div class="date">Tuesday · Apr 19</div>
+              Today
+            </div>
+            <div class="phone-card">
+              <svg class="phone-ring-svg" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" stroke-width="12" stroke="rgba(0,0,0,0.06)" fill="none"/>
+                <circle cx="60" cy="60" r="50" stroke-width="12" stroke="#ff6b35" fill="none" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="70" transform="rotate(-90 60 60)"/>
+                <circle cx="60" cy="60" r="36" stroke-width="12" stroke="rgba(0,0,0,0.06)" fill="none"/>
+                <circle cx="60" cy="60" r="36" stroke-width="12" stroke="#007aff" fill="none" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="30" transform="rotate(-90 60 60)"/>
+                <circle cx="60" cy="60" r="22" stroke-width="12" stroke="rgba(0,0,0,0.06)" fill="none"/>
+                <circle cx="60" cy="60" r="22" stroke-width="12" stroke="#34c759" fill="none" stroke-linecap="round" stroke-dasharray="138" stroke-dashoffset="42" transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="phone-totals">
+                <div class="cell"><div class="v cal">1,740</div><div class="l">Cal</div></div>
+                <div class="cell"><div class="v pro">142g</div><div class="l">Protein</div></div>
+                <div class="cell"><div class="v car">168g</div><div class="l">Carbs</div></div>
+              </div>
+            </div>
+            <div class="phone-card">
+              <div class="phone-title">Chipotle bowl</div>
+              <div class="phone-row"><span class="k">Chicken · 6oz</span><span class="v cal">305 kcal</span></div>
+              <div class="phone-row"><span class="k">Brown rice</span><span class="v">210 kcal</span></div>
+              <div class="phone-row"><span class="k">Black beans</span><span class="v">150 kcal</span></div>
+              <span class="phone-pill cal">USDA verified</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">Track<span class="sub">Photo → calories in 12s</span></div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="phone-head">
+              <div class="date">Pantry</div>
+              24 items
+            </div>
+            <div class="phone-card">
+              <div class="phone-title">Expiring this week</div>
+              <div class="phone-row"><span class="k">Chicken breast</span><span class="v cal">4 days</span></div>
+              <div class="phone-row"><span class="k">Broccoli</span><span class="v cal">2 days</span></div>
+              <div class="phone-row"><span class="k">Greek yogurt</span><span class="v cal">5 days</span></div>
+              <div class="phone-row"><span class="k">Spinach</span><span class="v cal">3 days</span></div>
+              <span class="phone-pill cal">Use soon</span>
+            </div>
+            <div class="phone-card">
+              <div class="phone-title">Long shelf life</div>
+              <div class="phone-row"><span class="k">Jasmine rice</span><span class="v car">6 mo</span></div>
+              <div class="phone-row"><span class="k">Olive oil</span><span class="v car">1 yr</span></div>
+              <div class="phone-row"><span class="k">Soy sauce</span><span class="v car">2 yr</span></div>
+              <span class="phone-pill car">From 1 receipt</span>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">Pantry<span class="sub">Receipt scan, not barcode grind</span></div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="phone-head">
+              <div class="date">Tonight</div>
+              Cook
+            </div>
+            <div class="phone-card">
+              <div class="phone-title">Honey-Garlic Chicken</div>
+              <div class="phone-row"><span class="k">Uses pantry</span><span class="v pro">5 items</span></div>
+              <div class="phone-row"><span class="k">Calories</span><span class="v pro">520 / serving</span></div>
+              <div class="phone-row"><span class="k">Prep time</span><span class="v pro">22 min</span></div>
+              <div class="phone-row"><span class="k">Protein</span><span class="v pro">42g</span></div>
+              <span class="phone-pill pro">Tap to log</span>
+            </div>
+            <div class="phone-card">
+              <div class="phone-title">Ginger Salmon</div>
+              <div class="phone-row"><span class="k">Uses expiring</span><span class="v pro">3 items</span></div>
+              <div class="phone-row"><span class="k">Calories</span><span class="v pro">480 / serving</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label">Cook<span class="sub">Recipe → one-tap meal log</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 5. WHY NOW ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">05 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker exercise"><span class="dot"></span>Why Now</div>
+    <h2 class="title">Three trends collided in 2025.</h2>
+    <div class="pillars">
+      <div class="pillar c1">
+        <div class="pic">01</div>
+        <h4>Multimodal AI is good enough.</h4>
+        <p>Gemini 3 Flash identifies food from a photo with ~90% accuracy at 12s median latency. Two years ago this was a research demo. Today it's a $0.003 API call.</p>
+      </div>
+      <div class="pillar c2">
+        <div class="pic">02</div>
+        <h4>On-device models arrived.</h4>
+        <p>iOS 18's Foundation Models framework runs recipe generation free on-device. No per-request LLM bill on the most expensive feature in the app.</p>
+      </div>
+      <div class="pillar c3">
+        <div class="pic">03</div>
+        <h4>Cal AI proved demand — and ceiling.</h4>
+        <p>Cal AI hit $20M ARR in 8 months doing photo-only. They also got called out for ±30% calorie errors. The market wants this fixed. We fix it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 6. MARKET ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">06 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker purple"><span class="dot"></span>Market</div>
+    <h2 class="title">A category <span class="grad">already paying.</span></h2>
+    <p class="lede">Noom is a $3.7B company. MyFitnessPal has 200M users. Cal AI hit $20M ARR in eight months. The wallet is open. The wedge product isn't built yet.</p>
+    <div class="tam-wrap">
+      <div class="tam-bar tam">
+        <div class="lbl" style="color:var(--ink-muted)">TAM</div>
+        <div class="val">$24B</div>
+        <div class="desc">Global nutrition &amp; wellness apps, 2028</div>
+      </div>
+      <div class="tam-bar sam">
+        <div class="lbl">SAM</div>
+        <div class="val">$4.2B</div>
+        <div class="desc">US iOS users actively tracking meals or macros</div>
+      </div>
+      <div class="tam-bar som">
+        <div class="lbl">SOM · 3 yr</div>
+        <div class="val">$48M</div>
+        <div class="desc">300k subs × $13/mo — 1.2% of SAM</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 7. COMPETITION ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">07 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker stand"><span class="dot"></span>Competition</div>
+    <h2 class="title">Everyone does half the loop.</h2>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Photo Track</th>
+          <th>Verified Calories</th>
+          <th>Pantry</th>
+          <th>Recipes From Pantry</th>
+          <th>Cook → Log</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>MyFitnessPal</td>
+          <td><span class="no">—</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+        </tr>
+        <tr>
+          <td>Cal AI</td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+        </tr>
+        <tr>
+          <td>Samsung Food / Whisk</td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="no">—</span></td>
+        </tr>
+        <tr>
+          <td>Noom</td>
+          <td><span class="no">—</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+          <td><span class="no">—</span></td>
+        </tr>
+        <tr class="us">
+          <td>SnapCal</td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+          <td><span class="yes">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ========= 8. MOAT ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">08 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker"><span class="dot"></span>Defensibility</div>
+    <h2 class="title">A data moat that <span class="grad">compounds.</span></h2>
+    <p class="lede">USDA lookup is table stakes. The real moat is five AI operations that only work with corrected user data — sharper every week you use it, impossible for a new entrant to clone cold.</p>
+    <div class="layers">
+      <div class="layer"><div class="num">01</div><div><h4>Personal portion calibration</h4><p>Learns per-user offsets from corrections. "Zach's chicken portions run 15% over USDA" — silently adjusts the next time.</p></div></div>
+      <div class="layer"><div class="num">02</div><div><h4>Brand &amp; restaurant routing</h4><p>Photo cues detect a Big Mac vs. a generic cheeseburger. Routes to chain nutrition DBs when it matters.</p></div></div>
+      <div class="layer"><div class="num">03</div><div><h4>Context inference</h4><p>Home plate vs. restaurant vs. takeout. Modifies portion estimate before the number hits your screen.</p></div></div>
+      <div class="layer"><div class="num">04</div><div><h4>Cross-meal anomaly detection</h4><p>Flags predictions &gt;2σ from your 30-day baseline before they ruin your trend line.</p></div></div>
+      <div class="layer"><div class="num">05</div><div><h4>Temporal freshness</h4><p>Aggregated corrections across users keep the nutrition DB current when USDA lags by years.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 9. BUSINESS MODEL ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">09 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker carbs"><span class="dot"></span>Business Model</div>
+    <h2 class="title">Honest free tier. <span class="grad">High-margin subscription.</span></h2>
+    <p class="lede">Three AI scans a day for free, forever. Pro unlocks the full closed loop. ~$0.14 per user per month in AI costs — 98%+ gross margin at Pro pricing.</p>
+    <div class="pricing">
+      <div class="price-card">
+        <span class="tag">Free forever</span>
+        <h3>Free</h3>
+        <div class="price" style="color:var(--ink)">$0</div>
+        <ul>
+          <li>3 AI photo scans per day</li>
+          <li>Unlimited manual logging</li>
+          <li>20-item pantry</li>
+          <li>1 recipe suggestion per day</li>
+          <li>Daily calorie ring</li>
+        </ul>
+      </div>
+      <div class="price-card pro">
+        <span class="tag">Premium</span>
+        <h3>SnapCal Pro</h3>
+        <div class="price">$4.99<small>/mo · $39/yr</small></div>
+        <ul>
+          <li>Unlimited AI meal scans</li>
+          <li>Unlimited pantry + receipt OCR</li>
+          <li>Unlimited on-device recipes</li>
+          <li>Personal portion calibration</li>
+          <li>HealthKit sync, widget, weekly report</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 10. ROADMAP ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">10 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker exercise"><span class="dot"></span>Roadmap · 9 weeks to App Store</div>
+    <h2 class="title">Shipping, not planning.</h2>
+    <div class="roadmap">
+      <div class="road-step done">
+        <div class="num-big">0</div>
+        <div class="when">Week 0 · Done</div>
+        <h4>Accuracy harness</h4>
+        <p>23 meals tested on Gemini 3 Flash. Median calibrated error 10.5%. Go-decision: GREEN.</p>
+      </div>
+      <div class="road-step">
+        <div class="num-big">1</div>
+        <div class="when">Weeks 1–3</div>
+        <h4>Core loop</h4>
+        <p>Camera → USDA → meal card. Daily rings, history, 7-day dogfood.</p>
+      </div>
+      <div class="road-step">
+        <div class="num-big">2</div>
+        <div class="when">Weeks 4–6</div>
+        <h4>Pantry &amp; Cook</h4>
+        <p>Receipt OCR, on-device recipe gen, "I Made This" handoff, paywall.</p>
+      </div>
+      <div class="road-step">
+        <div class="num-big">3</div>
+        <div class="when">Weeks 7–9</div>
+        <h4>TestFlight → Launch</h4>
+        <p>50-user beta, App Store submission, Product Hunt + paid acquisition.</p>
+      </div>
+    </div>
+    <p class="pull" style="margin-top:40px;">12-month target: <span class="hl">25k downloads · 8% paid conversion · $260k ARR.</span></p>
+  </div>
+</section>
+
+<!-- ========= 11. FOUNDER / TRACTION ========= -->
+<section class="slide">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">11 / 12</div>
+  <div class="body-wrap">
+    <div class="kicker"><span class="dot"></span>Founder &amp; Early Signal</div>
+    <h2 class="title">Solo builder. Operator, not slide-maker.</h2>
+    <div class="two-col">
+      <div class="quote-card">
+        <p class="quote">"The closed loop between what I eat and what I cook is the habit every tracker breaks. SnapCal doesn't break it — that's the whole product."</p>
+        <div class="attr">Zach Elbode · Founder, SnapCal</div>
+        <p class="body" style="margin-top:20px;font-size:16px;color:var(--ink-muted);">Solo operator running <b style="color:var(--ink);font-family:var(--rounded);">AISupplyGuy</b>, an AI integration consultancy with 5 active clients. Ships AI products every week. This is the first one I'm keeping.</p>
+      </div>
+      <div class="traction">
+        <div class="th">Early Signal</div>
+        <ul>
+          <li><span class="check">✓</span><span><b>Accuracy test:</b> 10.5% median calibrated error, 0 JSON failures</span></li>
+          <li><span class="check">✓</span><span><b>Architecture decided:</b> USDA-grounded, 5-layer moat documented</span></li>
+          <li><span class="check">✓</span><span><b>9-week plan executing:</b> de-risked, scoped, dated</span></li>
+          <li><span class="check">✓</span><span><b>Waitlist live:</b> landing page shipped, positioning validated</span></li>
+          <li><span class="check">✓</span><span><b>Spec complete:</b> Swift 6 / SwiftUI / iOS 17+, ready to build</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========= 12. ASK ========= -->
+<section class="slide ask">
+  <div class="wordmark"><span class="logo"></span>SnapCal</div>
+  <div class="page-num">12 / 12</div>
+  <div class="body-wrap">
+    <div class="ask-hero">
+      <div class="inner">
+        <span class="tag">The Ask</span>
+        <h2>$400K pre-seed.</h2>
+        <p style="margin-bottom:4px;">SAFE, $5M post-money cap. 12 months of runway. Gets us to App Store launch, 10k paid subs, and a Series A story with real DAU and retention data.</p>
+      </div>
+    </div>
+    <div class="use-grid">
+      <div class="use-card c1">
+        <div class="pct">45%</div>
+        <div class="lbl">Founder + 1 iOS hire</div>
+        <div class="desc">12 months of full-time execution, not moonlighting around clients.</div>
+      </div>
+      <div class="use-card c2">
+        <div class="pct">35%</div>
+        <div class="lbl">Paid acquisition</div>
+        <div class="desc">TikTok + Meta creator UGC. CAC target under $18 per install.</div>
+      </div>
+      <div class="use-card c3">
+        <div class="pct">20%</div>
+        <div class="lbl">Infra &amp; data</div>
+        <div class="desc">Gemini paid tier, USDA licensing, Supabase, tooling, legal.</div>
+      </div>
+    </div>
+  </div>
+  <div class="contact-row">
+    <span>zachary.elbode@gmail.com</span>
+    <span>SnapCal · 2026 · <a href="#">snapcal.app</a></span>
+  </div>
+</section>
+
+</body>
+</html>

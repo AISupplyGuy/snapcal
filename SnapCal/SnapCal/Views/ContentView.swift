@@ -9,13 +9,31 @@ struct ContentView: View {
             Group {
                 switch viewModel.state {
                 case .idle:
-                    IdlePrompt(onTapCamera: { showingCamera = true })
+                    TodayView(onTapCamera: { showingCamera = true })
                 case .analyzing:
                     AnalyzingView(photo: viewModel.capturedPhoto)
                 case .ready(let meal):
-                    MealCardView(meal: meal, photo: viewModel.capturedPhoto) { updated in
-                        viewModel.commitCorrections(updated)
-                    }
+                    MealCardView(
+                        meal: meal,
+                        photo: viewModel.capturedPhoto,
+                        onCommit: { updated in
+                            viewModel.commitCorrections(updated)
+                        },
+                        onDietaryVariantChange: { item, preference, plateContext in
+                            await viewModel.rematchDietaryVariant(
+                                for: item,
+                                preference: preference,
+                                plateContext: plateContext
+                            )
+                        },
+                        onSizeVariantChange: { item, sizeKey, plateContext in
+                            await viewModel.rematchSizeVariant(
+                                for: item,
+                                sizeKey: sizeKey,
+                                plateContext: plateContext
+                            )
+                        }
+                    )
                 case .failed(let message):
                     FailureView(message: message, onRetry: retake)
                 }
@@ -74,68 +92,6 @@ private struct SCBrandMark: View {
                 .font(.system(size: 17, weight: .heavy, design: .rounded))
                 .foregroundStyle(.primary)
         }
-    }
-}
-
-// MARK: - Idle prompt
-
-private struct IdlePrompt: View {
-    let onTapCamera: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Spacer(minLength: 20)
-
-            SCKickerPill(text: "AI meal tracking", tint: SCTheme.Colors.accentOrange)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Snap.")
-                    .font(SCTheme.Type_.hero(56))
-                (
-                    Text("Log.")
-                        .font(SCTheme.Type_.hero(56))
-                        .foregroundStyle(SCTheme.Gradients.heroText)
-                    + Text(" Done.")
-                        .font(SCTheme.Type_.hero(56))
-                )
-            }
-            .foregroundStyle(.primary)
-
-            Text("Point your camera at a meal. Calories and macros come from USDA's verified database, not a model's guess.")
-                .font(SCTheme.Type_.body())
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer()
-
-            VStack(spacing: 14) {
-                Button(action: onTapCamera) {
-                    Label("Snap a meal", systemImage: "camera.fill")
-                        .scCTAStyle()
-                }
-                .buttonStyle(.plain)
-
-                HStack(spacing: 14) {
-                    SCMetaBadge(text: "Lab-verified")
-                    SCMetaBadge(text: "No account")
-                    SCMetaBadge(text: "Personalized")
-                }
-            }
-        }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 24)
-    }
-}
-
-private struct SCMetaBadge: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(SCTheme.Type_.caption())
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Capsule().fill(.quaternary.opacity(0.4)))
     }
 }
 
