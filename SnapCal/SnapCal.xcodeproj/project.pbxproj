@@ -10,9 +10,22 @@
 		D288D33E2F96A3EB009E7A53 /* SnapCal.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapCal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D22AECFB2F97FC8300F564FD /* Exceptions for "SnapCal" folder in "SnapCal" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D288D33D2F96A3EB009E7A53 /* SnapCal */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D288D3402F96A3EB009E7A53 /* SnapCal */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D22AECFB2F97FC8300F564FD /* Exceptions for "SnapCal" folder in "SnapCal" target */,
+			);
 			path = SnapCal;
 			sourceTree = "<group>";
 		};
@@ -254,7 +267,7 @@
 				DEVELOPMENT_TEAM = K8L7R36927;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_FILE = SnapCal/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -290,7 +303,7 @@
 				DEVELOPMENT_TEAM = K8L7R36927;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_FILE = SnapCal/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

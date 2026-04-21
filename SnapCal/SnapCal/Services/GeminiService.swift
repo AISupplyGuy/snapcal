@@ -42,10 +42,11 @@ actor GeminiService {
         guard let key = apiKey, !key.isEmpty else { throw GeminiError.missingAPIKey }
         self.apiKey = key
         self.model = (model?.isEmpty == false ? model : nil) ?? "gemini-3-flash-preview"
-        // Pro fallback for low-confidence photos. Gemini 2.5 Pro is the
-        // per-architecture default; override via GEMINI_PRO_MODEL if a
-        // newer Pro tier becomes available (e.g. gemini-3-pro-preview).
-        self.proModel = (proModel?.isEmpty == false ? proModel : nil) ?? "gemini-2.5-pro"
+        // Pro fallback for low-confidence photos. Gemini 3 Pro preview pairs
+        // cleanly with the 3-flash default — same generation, identical
+        // prompt compatibility. Override via GEMINI_PRO_MODEL (e.g. bump
+        // to gemini-3.1-pro-preview for the bleeding-edge tier).
+        self.proModel = (proModel?.isEmpty == false ? proModel : nil) ?? "gemini-3-pro-preview"
         self.session = session
     }
 
