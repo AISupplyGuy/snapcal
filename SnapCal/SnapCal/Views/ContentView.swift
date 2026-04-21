@@ -3,15 +3,19 @@ import SwiftUI
 struct ContentView: View {
     @State private var viewModel = TrackViewModel()
     @State private var showingCamera = false
+    private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     var body: some View {
         NavigationStack {
             Group {
                 switch viewModel.state {
                 case .idle:
-                    TodayView(onTapCamera: { showingCamera = true })
+                    TodayView(
+                        onTapCamera: { showingCamera = true },
+                        lidarEnabled: lidarEnabled
+                    )
                 case .analyzing:
-                    AnalyzingView(photo: viewModel.capturedPhoto)
+                    AnalyzingView(photo: viewModel.capturedPhoto, lidarEnabled: lidarEnabled)
                 case .ready(let meal):
                     MealCardView(
                         meal: meal,
@@ -63,7 +67,7 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingCamera) {
-                CameraView { image in
+                CaptureGuideView(lidarEnabled: lidarEnabled) { image in
                     showingCamera = false
                     viewModel.analyze(image: image)
                 }
@@ -99,10 +103,16 @@ private struct SCBrandMark: View {
 
 private struct AnalyzingView: View {
     let photo: UIImage?
+    let lidarEnabled: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SCKickerPill(text: "Identifying", tint: SCTheme.Colors.accentOrange)
+            HStack(spacing: 8) {
+                SCKickerPill(text: "Identifying", tint: SCTheme.Colors.accentOrange)
+                if lidarEnabled {
+                    SCKickerPill(text: "LiDAR depth", tint: SCTheme.Colors.standTeal)
+                }
+            }
 
             if let photo {
                 Image(uiImage: photo)
@@ -139,6 +149,51 @@ private struct AnalyzingView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
+    }
+}
+
+private struct CaptureGuideView: View {
+    let lidarEnabled: Bool
+    let onPicked: (UIImage) -> Void
+
+    var body: some View {
+        ZStack {
+            CameraView(onPicked: onPicked)
+                .ignoresSafeArea()
+
+            VStack {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("For better portion accuracy")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("Include your hand, fork, or a clear plate edge.")
+                            .font(SCTheme.Type_.caption())
+                            .foregroundStyle(.white.opacity(0.95))
+                    }
+                    Spacer()
+                    if lidarEnabled {
+                        HStack(spacing: 4) {
+                            Image(systemName: "dot.radiowaves.left.and.right")
+                            Text("LiDAR")
+                        }
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(SCTheme.Colors.standTeal.opacity(0.82), in: Capsule())
+                    }
+                }
+                .padding(12)
+                .background(.black.opacity(0.42), in: RoundedRectangle(cornerRadius: SCTheme.Radius.sm))
+                .overlay(RoundedRectangle(cornerRadius: SCTheme.Radius.sm).stroke(.white.opacity(0.16)))
+                .padding(.horizontal, 16)
+                .padding(.top, 18)
+
+                Spacer()
+            }
+            .allowsHitTesting(false)
+        }
     }
 }
 

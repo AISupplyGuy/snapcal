@@ -6,6 +6,7 @@ import SwiftUI
 
 struct TodayView: View {
     let onTapCamera: () -> Void
+    let lidarEnabled: Bool
     private let diary = MealDiary.shared
 
     var body: some View {
@@ -30,7 +31,12 @@ struct TodayView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SCKickerPill(text: "Today", tint: SCTheme.Colors.accentOrange)
+            HStack(spacing: 8) {
+                SCKickerPill(text: "Today", tint: SCTheme.Colors.accentOrange)
+                if lidarEnabled {
+                    SCKickerPill(text: "LiDAR enabled", tint: SCTheme.Colors.standTeal)
+                }
+            }
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Self.dateFormatter.string(from: .now))
                     .font(SCTheme.Type_.title(32))

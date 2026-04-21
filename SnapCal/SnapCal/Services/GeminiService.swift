@@ -22,8 +22,12 @@ enum GeminiError: LocalizedError {
 
 actor GeminiService {
     private let apiKey: String
-    private let model: String
+    private let model: String        // default (Flash) model
+    private let proModel: String     // escalation model for low-confidence cases
     private let session: URLSession
+
+    var defaultModel: String { model }
+    var escalationModel: String { proModel }
 
     // Read from Info.plist / env. Never commit the key.
     init(
@@ -31,16 +35,27 @@ actor GeminiService {
             ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String),
         model: String? = ProcessInfo.processInfo.environment["GEMINI_MODEL"]
             ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_MODEL") as? String),
+        proModel: String? = ProcessInfo.processInfo.environment["GEMINI_PRO_MODEL"]
+            ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_PRO_MODEL") as? String),
         session: URLSession = .shared
     ) throws {
         guard let key = apiKey, !key.isEmpty else { throw GeminiError.missingAPIKey }
         self.apiKey = key
         self.model = (model?.isEmpty == false ? model : nil) ?? "gemini-3-flash-preview"
+        // Pro fallback for low-confidence photos. Gemini 2.5 Pro is the
+        // per-architecture default; override via GEMINI_PRO_MODEL if a
+        // newer Pro tier becomes available (e.g. gemini-3-pro-preview).
+        self.proModel = (proModel?.isEmpty == false ? proModel : nil) ?? "gemini-2.5-pro"
         self.session = session
     }
 
-    func identifyMeal(imageJPEG: Data, supportedChains: [String] = []) async throws -> GeminiMealResponse {
-        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)")!
+    func identifyMeal(
+        imageJPEG: Data,
+        supportedChains: [String] = [],
+        modelOverride: String? = nil
+    ) async throws -> GeminiMealResponse {
+        let modelToUse = modelOverride ?? model
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(modelToUse):generateContent?key=\(apiKey)")!
 
         let body: [String: Any] = [
             "contents": [[
@@ -77,7 +92,7 @@ actor GeminiService {
                 let rawBody = String(data: data, encoding: .utf8) ?? ""
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 #if DEBUG
-                print("[Gemini] attempt=\(attempt) status=\(status)")
+                print("[Gemini] model=\(modelToUse) attempt=\(attempt) status=\(status)")
                 #endif
                 if (200..<300).contains(status) {
                     return try Self.parseResponse(data: data, rawBody: rawBody)

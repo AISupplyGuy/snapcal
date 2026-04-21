@@ -123,12 +123,17 @@ actor USDAService {
         let cosmeticWords: Set<String> = [
             "fresh", "organic", "natural", "homemade", "artisanal"
         ]
-        return raw
+        let filtered = raw
             .split(separator: " ")
             .map(String.init)
             .filter { !cosmeticWords.contains($0.lowercased()) }
             .joined(separator: " ")
             .trimmingCharacters(in: .whitespaces)
+        // If every token was cosmetic (e.g. "fresh organic"), filtered is empty
+        // which would send an empty USDA query and cache whatever garbage
+        // came back under the "" key, poisoning future normalized-to-empty
+        // lookups. Fall back to the raw input so we at least search something.
+        return filtered.isEmpty ? raw.trimmingCharacters(in: .whitespaces) : filtered
     }
 
     // Stopwords that shouldn't contribute to token-coverage scoring.

@@ -12,6 +12,14 @@ struct MealEntry: Codable, Sendable, Identifiable {
     var overallConfidence: Double
     var items: [MealItem]
     var totals: NutritionFacts
+    // Which Gemini tier produced these numbers ("flash", "pro", or
+    // "flash+pro" when both ran for divergence comparison). Used by
+    // analytics / debug and surfaced on the card when verification is asked.
+    var modelTier: String
+    // Set when Flash and Pro produced materially different totals on a
+    // low-confidence photo — the UI should ask the user to sanity-check
+    // before saving.
+    var needsVerification: Bool
 
     init(
         id: UUID = UUID(),
@@ -21,7 +29,9 @@ struct MealEntry: Codable, Sendable, Identifiable {
         plateContext: PlateContext,
         referenceObjectPresent: Bool,
         overallConfidence: Double,
-        items: [MealItem]
+        items: [MealItem],
+        modelTier: String = "flash",
+        needsVerification: Bool = false
     ) {
         self.id = id
         self.capturedAt = capturedAt
@@ -32,10 +42,50 @@ struct MealEntry: Codable, Sendable, Identifiable {
         self.overallConfidence = overallConfidence
         self.items = items
         self.totals = items.map(\.nutrition).reduce(.zero, +)
+        self.modelTier = modelTier
+        self.needsVerification = needsVerification
     }
 
     mutating func recomputeTotals() {
         totals = items.map(\.nutrition).reduce(.zero, +)
+    }
+
+    // Custom Codable to keep old saved meals decodable after the two new
+    // fields were added. Missing fields default to "flash" / false.
+    enum CodingKeys: String, CodingKey {
+        case id, capturedAt, photoFilename, mealName, plateContext
+        case referenceObjectPresent, overallConfidence, items, totals
+        case modelTier, needsVerification
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.capturedAt = try c.decode(Date.self, forKey: .capturedAt)
+        self.photoFilename = try c.decodeIfPresent(String.self, forKey: .photoFilename)
+        self.mealName = try c.decode(String.self, forKey: .mealName)
+        self.plateContext = try c.decode(PlateContext.self, forKey: .plateContext)
+        self.referenceObjectPresent = try c.decode(Bool.self, forKey: .referenceObjectPresent)
+        self.overallConfidence = try c.decode(Double.self, forKey: .overallConfidence)
+        self.items = try c.decode([MealItem].self, forKey: .items)
+        self.totals = try c.decode(NutritionFacts.self, forKey: .totals)
+        self.modelTier = try c.decodeIfPresent(String.self, forKey: .modelTier) ?? "flash"
+        self.needsVerification = try c.decodeIfPresent(Bool.self, forKey: .needsVerification) ?? false
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(capturedAt, forKey: .capturedAt)
+        try c.encodeIfPresent(photoFilename, forKey: .photoFilename)
+        try c.encode(mealName, forKey: .mealName)
+        try c.encode(plateContext, forKey: .plateContext)
+        try c.encode(referenceObjectPresent, forKey: .referenceObjectPresent)
+        try c.encode(overallConfidence, forKey: .overallConfidence)
+        try c.encode(items, forKey: .items)
+        try c.encode(totals, forKey: .totals)
+        try c.encode(modelTier, forKey: .modelTier)
+        try c.encode(needsVerification, forKey: .needsVerification)
     }
 }
 

@@ -68,6 +68,7 @@ enum GeminiPrompt {
         - Include oils, sauces, and dressings as separate items when visible or strongly implied by preparation.
         - When portion is ambiguous, estimate conservatively and drop item_confidence accordingly.
         - Set reference_object_present to true only if a hand, fork, spoon, or plate edge of known size is clearly in frame.
+        - If reference_object_present is false, lower overall_confidence and include a clarifying question asking for a retake with a hand/fork/plate edge.
         - Never output calories, protein, carbs, fat, or fiber. Those are computed downstream.
 
         \(chainRule)
