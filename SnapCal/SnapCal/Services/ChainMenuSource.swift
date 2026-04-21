@@ -61,20 +61,22 @@ actor ChainMenuSource: NutritionSource {
     func lookup(query: NutritionQuery) async throws -> NutritionMatch? {
         guard let rawBrand = query.brandCue, !rawBrand.isEmpty else { return nil }
         guard let chain = try await matchedChain(for: rawBrand) else { return nil }
-        guard let item = try await bestMenuItem(chainId: chain.id, rawName: query.itemName) else {
+        guard let best = try await bestMenuItem(chainSlug: chain.slug, chainId: chain.id, rawName: query.itemName) else {
             #if DEBUG
             print("[Chain] \(chain.slug) matched but no item for \"\(query.itemName)\"")
             #endif
             return nil
         }
 
-        let nutrition = Self.nutrition(from: item, targetGrams: query.gramsEstimate)
+        let nutrition = Self.nutrition(from: best.item, targetGrams: query.gramsEstimate)
         return NutritionMatch(
             sourceId: chain.slug,
-            displayName: "\(chain.name): \(item.name)",
-            externalId: item.id.uuidString,
+            displayName: "\(chain.name): \(best.item.name)",
+            externalId: best.item.id.uuidString,
             nutrition: nutrition,
-            confidence: 0.9
+            confidence: 0.9,
+            sizeOptions: best.sizeOptions,
+            selectedSizeKey: best.selectedSizeKey
         )
     }
 
@@ -115,7 +117,13 @@ actor ChainMenuSource: NutritionSource {
     // (1) require meaningful coverage, (2) prefer verified rows, (3) prefer
     // candidates whose token-count is closest to the query — that pushes
     // exact matches above generic parent items.
-    private func bestMenuItem(chainId: UUID, rawName: String) async throws -> ChainMenuItemDTO? {
+    private struct BestMenuResult {
+        let item: ChainMenuItemDTO
+        let sizeOptions: [ChainSizeOption]
+        let selectedSizeKey: String?
+    }
+
+    private func bestMenuItem(chainSlug: String, chainId: UUID, rawName: String) async throws -> BestMenuResult? {
         let tokens = rawName
             .lowercased()
             .split(whereSeparator: { !$0.isLetter })
@@ -190,7 +198,17 @@ actor ChainMenuSource: NutritionSource {
         }
         #endif
 
-        return best?.0
+        guard let winner = best?.0 else { return nil }
+        let family = familySignature(for: winner.name)
+        let siblings = gfFiltered.map(\.0).filter { familySignature(for: $0.name) == family }
+        let sizeOptions = sizeOptionsForFamily(chainSlug: chainSlug, siblings: siblings, selectedName: winner.name)
+        let selectedSizeKey = selectedSizeKeyForName(chainSlug: chainSlug, name: winner.name, siblings: siblings)
+
+        return BestMenuResult(
+            item: winner,
+            sizeOptions: sizeOptions,
+            selectedSizeKey: selectedSizeKey
+        )
     }
 
     private func isGlutenFreeVariant(_ name: String) -> Bool {
@@ -208,6 +226,80 @@ actor ChainMenuSource: NutritionSource {
     // Same stopword set the USDA path uses so both ranking systems agree.
     private static let stopwords: Set<String> = [
         "and", "the", "with", "from", "into", "for", "plus", "some", "any"
+    ]
+
+    private func familySignature(for name: String) -> String {
+        let drop = Set(Self.sizeTerms).union(["gluten", "free", "gf"])
+        let tokens = name
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+            .filter { !drop.contains($0) }
+        return tokens.joined(separator: " ")
+    }
+
+    private func sizeOptionsForFamily(
+        chainSlug: String,
+        siblings: [ChainMenuItemDTO],
+        selectedName: String
+    ) -> [ChainSizeOption] {
+        var keys: Set<String> = []
+        for s in siblings {
+            if let k = explicitSizeKey(in: s.name) {
+                keys.insert(k)
+            }
+        }
+        if keys.isEmpty { return [] }
+
+        if !selectedName.lowercased().contains("mini"), keys.contains("mini") {
+            keys.insert("regular")
+        }
+        if chainSlug == "bjs", keys.contains("mini"), !keys.contains("regular") {
+            keys.insert("regular")
+        }
+
+        let ordered = Self.sizeOrder.filter { keys.contains($0) } + keys.filter { !Self.sizeOrder.contains($0) }.sorted()
+        return ordered.map { ChainSizeOption(key: $0, label: sizeLabel(for: $0)) }
+    }
+
+    private func selectedSizeKeyForName(
+        chainSlug: String,
+        name: String,
+        siblings: [ChainMenuItemDTO]
+    ) -> String? {
+        if let explicit = explicitSizeKey(in: name) { return explicit }
+        let siblingKeys = siblings.compactMap { explicitSizeKey(in: $0.name) }
+        if chainSlug == "bjs", siblingKeys.contains("mini") { return "regular" }
+        if siblingKeys.contains("mini") { return "regular" }
+        return nil
+    }
+
+    private func explicitSizeKey(in name: String) -> String? {
+        let tokens = name
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter })
+            .map(String.init)
+        for token in tokens where Self.sizeTerms.contains(token) {
+            return token == "gf" ? nil : token
+        }
+        return nil
+    }
+
+    private func sizeLabel(for key: String) -> String {
+        key
+            .split(separator: " ")
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
+    }
+
+    private static let sizeTerms: Set<String> = [
+        "kids", "mini", "small", "medium", "large", "regular",
+        "tall", "grande", "venti", "trenta"
+    ]
+
+    private static let sizeOrder: [String] = [
+        "kids", "mini", "small", "medium", "large", "regular",
+        "tall", "grande", "venti", "trenta"
     ]
 
     // MARK: Nutrition math

@@ -57,7 +57,9 @@ actor MealAnalysisPipeline {
                         baselinePer100g: baselinePer100g,
                         itemConfidence: identified.itemConfidence,
                         preparation: identified.preparation,
-                        brandCue: identified.brandCue
+                        brandCue: identified.brandCue,
+                        availableSizeOptions: match?.sizeOptions,
+                        selectedSizeKey: match?.selectedSizeKey
                     )
                     return (index, item)
                 }

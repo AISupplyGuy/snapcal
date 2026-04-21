@@ -289,7 +289,11 @@ private struct ItemRow: View {
         }
         .onAppear {
             guard !sizeOptions.isEmpty else { return }
-            let pref = savedSizePreference ?? ChainVariantSupport.selectedSizeKey(for: item) ?? sizeOptions.first?.key
+            let availableKeys = Set(sizeOptions.map(\.key))
+            let pref = savedSizePreference
+                .flatMap { availableKeys.contains($0) ? $0 : nil }
+                ?? item.selectedSizeKey
+                ?? sizeOptions.first?.key
             selectedSizeKey = pref
         }
     }
@@ -312,7 +316,7 @@ private struct ItemRow: View {
     }
 
     private var sizeOptions: [ChainSizeOption] {
-        ChainVariantSupport.sizeOptions(for: item)
+        item.availableSizeOptions ?? []
     }
 
     private var savedVariantPreference: DietaryVariantPreference {
@@ -367,6 +371,8 @@ private struct ItemRow: View {
         item.matchConfidence = match.confidence
         item.nutrition = match.nutrition
         item.baselinePer100g = baselinePer100g
+        item.availableSizeOptions = match.sizeOptions
+        item.selectedSizeKey = match.selectedSizeKey
     }
 
     @MainActor
@@ -390,6 +396,9 @@ private struct ItemRow: View {
         item.matchConfidence = match.confidence
         item.nutrition = match.nutrition
         item.baselinePer100g = baselinePer100g
+        item.availableSizeOptions = match.sizeOptions
+        item.selectedSizeKey = match.selectedSizeKey
+        selectedSizeKey = match.selectedSizeKey ?? sizeKey
     }
 }
 

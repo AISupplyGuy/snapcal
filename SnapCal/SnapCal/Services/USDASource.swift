@@ -45,7 +45,9 @@ actor USDASource: NutritionSource {
             displayName: food.description,
             externalId: String(food.fdcId),
             nutrition: nutrition,
-            confidence: 0.5 + 0.2 * coverageRatio
+            confidence: 0.5 + 0.2 * coverageRatio,
+            sizeOptions: nil,
+            selectedSizeKey: nil
         )
     }
 

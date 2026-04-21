@@ -64,6 +64,8 @@ struct MealItem: Codable, Sendable, Identifiable, Equatable {
     var preparation: String?
     var brandCue: String?
     var dietaryVariantPreference: DietaryVariantPreference?
+    var availableSizeOptions: [ChainSizeOption]?
+    var selectedSizeKey: String?
 
     init(
         id: UUID = UUID(),
@@ -80,7 +82,9 @@ struct MealItem: Codable, Sendable, Identifiable, Equatable {
         itemConfidence: Double,
         preparation: String? = nil,
         brandCue: String? = nil,
-        dietaryVariantPreference: DietaryVariantPreference? = nil
+        dietaryVariantPreference: DietaryVariantPreference? = nil,
+        availableSizeOptions: [ChainSizeOption]? = nil,
+        selectedSizeKey: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -97,5 +101,7 @@ struct MealItem: Codable, Sendable, Identifiable, Equatable {
         self.preparation = preparation
         self.brandCue = brandCue
         self.dietaryVariantPreference = dietaryVariantPreference
+        self.availableSizeOptions = availableSizeOptions
+        self.selectedSizeKey = selectedSizeKey
     }
 }

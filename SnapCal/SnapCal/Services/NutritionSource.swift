@@ -20,4 +20,6 @@ struct NutritionMatch: Sendable {
     let externalId: String?    // FDC id, menu item UUID, UPC, etc.
     let nutrition: NutritionFacts
     let confidence: Double     // 0–1
+    let sizeOptions: [ChainSizeOption]?
+    let selectedSizeKey: String?
 }
