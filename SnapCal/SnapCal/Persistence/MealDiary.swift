@@ -72,6 +72,44 @@ final class MealDiary {
         todaysMeals.map(\.totals).reduce(.zero, +)
     }
 
+    // All-time meal count, read straight from the jsonl. Cheap enough for
+    // the Profile stats card; rescan on demand since logs are small.
+    var allTimeMealCount: Int {
+        guard let data = try? Data(contentsOf: fileURL) else { return 0 }
+        return data.split(separator: 0x0A, omittingEmptySubsequences: true).count
+    }
+
+    // Consecutive days ending today where at least one meal was logged.
+    // "Today" counts as day 1 even if empty so the streak reads correctly
+    // before the user's first meal of the day.
+    var dayStreak: Int {
+        guard let data = try? Data(contentsOf: fileURL) else { return 0 }
+        let cal = Calendar.current
+        var dates: Set<Date> = []
+        for line in data.split(separator: 0x0A, omittingEmptySubsequences: true) {
+            guard let entry = try? decoder.decode(MealEntry.self, from: Data(line)) else { continue }
+            dates.insert(cal.startOfDay(for: entry.capturedAt))
+        }
+        if dates.isEmpty { return 0 }
+
+        var streak = 0
+        var cursor = cal.startOfDay(for: .now)
+        // If nothing logged today, start counting from yesterday — today is
+        // still "in progress" and shouldn't break a multi-day streak.
+        if !dates.contains(cursor) {
+            guard let yesterday = cal.date(byAdding: .day, value: -1, to: cursor) else {
+                return 0
+            }
+            cursor = yesterday
+        }
+        while dates.contains(cursor) {
+            streak += 1
+            guard let prev = cal.date(byAdding: .day, value: -1, to: cursor) else { break }
+            cursor = prev
+        }
+        return streak
+    }
+
     // Remove a meal from today's list and rewrite meals.jsonl without that
     // entry. Older days are preserved. Used by swipe-to-delete on Today.
     func delete(_ meal: MealEntry) {

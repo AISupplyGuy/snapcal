@@ -5,19 +5,30 @@ struct ContentView: View {
     @State private var showingCamera = false
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
+    @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
+
     var body: some View {
         TabView {
             todayTab
                 .tabItem {
-                    Label("Today", systemImage: "circle.grid.cross.fill")
+                    Label("Track", systemImage: "camera.viewfinder")
                 }
 
             ProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: "person.crop.circle")
+                    Label("Profile", systemImage: "person.crop.circle.fill")
                 }
         }
         .tint(SCTheme.Colors.accentPink)
+        .preferredColorScheme(resolvedScheme)
+    }
+
+    private var resolvedScheme: ColorScheme? {
+        switch AppearancePreference(rawValue: appearance) {
+        case .light: return .light
+        case .dark:  return .dark
+        case .system, .none: return nil
+        }
     }
 
     private var todayTab: some View {
