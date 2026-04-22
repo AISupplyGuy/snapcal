@@ -110,6 +110,19 @@ final class MealDiary {
         return streak
     }
 
+    // Full meal history read from disk. Used by Insights for trends and
+    // most-logged foods. Small log so we rescan on demand.
+    func allMeals() -> [MealEntry] {
+        guard let data = try? Data(contentsOf: fileURL) else { return [] }
+        var out: [MealEntry] = []
+        for line in data.split(separator: 0x0A, omittingEmptySubsequences: true) {
+            if let entry = try? decoder.decode(MealEntry.self, from: Data(line)) {
+                out.append(entry)
+            }
+        }
+        return out.sorted { $0.capturedAt < $1.capturedAt }
+    }
+
     // Remove a meal from today's list and rewrite meals.jsonl without that
     // entry. Older days are preserved. Used by swipe-to-delete on Today.
     func delete(_ meal: MealEntry) {
