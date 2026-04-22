@@ -58,22 +58,22 @@ struct SCTabBar: View {
                 onCameraTap()
             } label: {
                 ZStack {
+                    // Opaque backing ring so content behind doesn't bleed.
+                    Circle()
+                        .fill(Color(.systemBackground))
+                        .frame(width: 70, height: 70)
                     Circle()
                         .fill(SCTheme.Gradients.cta)
-                        .frame(width: 58, height: 58)
-                        .shadow(color: SCTheme.Colors.accentPink.opacity(0.35), radius: 10, y: 4)
+                        .frame(width: 60, height: 60)
+                        .shadow(color: SCTheme.Colors.accentPink.opacity(0.4), radius: 12, y: 4)
                     Image(systemName: "camera.fill")
                         .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(.white)
                 }
-                .overlay(
-                    Circle()
-                        .stroke(.white.opacity(0.3), lineWidth: 1.2)
-                )
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Snap a meal")
-            .offset(y: -42)
+            .offset(y: -48)
         }
         .fixedSize(horizontal: false, vertical: true)
     }
