@@ -62,6 +62,19 @@ struct ContentView: View {
                                 sizeKey: sizeKey,
                                 plateContext: plateContext
                             )
+                        },
+                        onLoadChains: {
+                            await viewModel.loadSupportedChains()
+                        },
+                        onChainReapply: { item, chainName, plateContext in
+                            await viewModel.rematchForChain(
+                                item: item,
+                                chainName: chainName,
+                                plateContext: plateContext
+                            )
+                        },
+                        pristineItemsProvider: {
+                            viewModel.pristineItems
                         }
                     )
                 case .failed(let message):

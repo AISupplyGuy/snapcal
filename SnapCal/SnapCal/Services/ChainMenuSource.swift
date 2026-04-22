@@ -25,10 +25,8 @@ actor ChainMenuSource: NutritionSource {
     private var chainsCache: [Chain]?
 
     init(
-        supabaseURL: String? = ProcessInfo.processInfo.environment["SUPABASE_URL"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String),
-        apiKey: String? = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String),
+        supabaseURL: String? = GeminiService.resolve("SUPABASE_URL"),
+        apiKey: String? = GeminiService.resolve("SUPABASE_ANON_KEY"),
         session: URLSession = .shared
     ) throws {
         guard let urlString = supabaseURL, let url = URL(string: urlString),
@@ -45,17 +43,24 @@ actor ChainMenuSource: NutritionSource {
     // a single menu-item name vs. decomposed into ingredients. Loads and
     // caches the chains table on first call; subsequent calls are free.
     func supportedChainNames() async -> [String] {
+        await supportedChains().map { $0.name }
+    }
+
+    // Full chain objects for the "From" picker on the meal card — view needs
+    // both the display name and the slug/id to round-trip the user's choice
+    // back through the router as a brandCue.
+    func supportedChains() async -> [Chain] {
         if chainsCache == nil {
             do {
                 try await loadChains()
             } catch {
                 #if DEBUG
-                print("[Chain] supportedChainNames load failed: \(error.localizedDescription)")
+                print("[Chain] supportedChains load failed: \(error.localizedDescription)")
                 #endif
                 return []
             }
         }
-        return chainsCache?.map { $0.name } ?? []
+        return chainsCache?.sorted { $0.name < $1.name } ?? []
     }
 
     func lookup(query: NutritionQuery) async throws -> NutritionMatch? {

@@ -114,6 +114,44 @@ final class TrackViewModel {
         return await router.lookup(query: query)
     }
 
+    // Async fetch of the chain list that backs the "From" picker on the meal
+    // card. Falls back to an empty array if Supabase is unreachable so the
+    // picker just shows "Home".
+    func loadSupportedChains() async -> [Chain] {
+        guard let chainMenu = try? ChainMenuSource() else { return [] }
+        return await chainMenu.supportedChains()
+    }
+
+    // Re-match a single item against a user-declared chain. Returns nil if
+    // the chain doesn't have a matching menu item (caller should keep the
+    // original item in that case). No brandCue in the photo required — the
+    // picker itself is the signal.
+    func rematchForChain(
+        item: MealItem,
+        chainName: String,
+        plateContext: PlateContext
+    ) async -> NutritionMatch? {
+        guard let chainMenu = try? ChainMenuSource() else { return nil }
+        let query = NutritionQuery(
+            itemName: chainMealQueryName(for: item),
+            brandCue: chainName,
+            gramsEstimate: item.gramsEstimate,
+            plateContext: plateContext
+        )
+        return try? await chainMenu.lookup(query: query)
+    }
+
+    // Strip generic modifiers Gemini adds ("baked", "with vanilla ice cream")
+    // before handing to the chain search — chain menu names are terser.
+    private func chainMealQueryName(for item: MealItem) -> String {
+        let stripped = item.name
+            .replacingOccurrences(of: "(?i),?\\s*baked\\b", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)\\bwith .*$", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return stripped.isEmpty ? item.name : stripped
+    }
+
     func reset() {
         runningTask?.cancel()
         runningTask = nil
@@ -121,6 +159,10 @@ final class TrackViewModel {
         originalMeal = nil
         state = .idle
     }
+
+    // Used by the meal card's chain picker when the user resets to "Home" —
+    // returns the original items as produced by the pipeline.
+    var pristineItems: [MealItem]? { originalMeal?.items }
 
     // Called when the user taps Save on the meal card. Persists the meal to the
     // user-visible diary, writes any slider edits to CorrectionLog (silent

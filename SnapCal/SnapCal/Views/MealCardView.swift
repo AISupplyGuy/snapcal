@@ -6,18 +6,32 @@ struct MealCardView: View {
     let onCommit: (MealEntry) -> Void
     let onDietaryVariantChange: (MealItem, DietaryVariantPreference, PlateContext) async -> NutritionMatch?
     let onSizeVariantChange: (MealItem, String, PlateContext) async -> NutritionMatch?
+    let onLoadChains: () async -> [Chain]
+    let onChainReapply: (MealItem, String, PlateContext) async -> NutritionMatch?
+    let pristineItemsProvider: () -> [MealItem]?
+
+    @State private var availableChains: [Chain] = []
+    @State private var activeChain: Chain?
+    @State private var isChainApplying = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 photoBlock
                 headerBlock
+                chainPickerBlock
                 totalsCard
                 itemsList
                 saveButton
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+        }
+        .task {
+            if availableChains.isEmpty {
+                availableChains = await onLoadChains()
+            }
+            activeChain = inferInitialChain()
         }
     }
 
@@ -50,6 +64,126 @@ struct MealCardView: View {
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    // "From" picker — lets the user declare the meal's source when the photo
+    // has no brand cue (plain pazookie on a plate → BJ's). Selecting a chain
+    // re-runs each item through the chain menu lookup.
+
+    private var chainPickerBlock: some View {
+        HStack(spacing: 10) {
+            Text("From")
+                .font(SCTheme.Type_.kicker())
+                .tracking(1.2)
+                .foregroundStyle(.secondary)
+
+            Menu {
+                Button {
+                    guard activeChain != nil else { return }
+                    applyChainReset()
+                } label: {
+                    Label("Home / kitchen", systemImage: "house.fill")
+                }
+                if !availableChains.isEmpty {
+                    Divider()
+                    ForEach(availableChains) { chain in
+                        Button {
+                            guard activeChain?.id != chain.id else { return }
+                            applyChain(chain)
+                        } label: {
+                            if activeChain?.id == chain.id {
+                                Label(chain.name, systemImage: "checkmark")
+                            } else {
+                                Text(chain.name)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: activeChain == nil ? "house.fill" : "storefront.fill")
+                        .font(.system(size: 12, weight: .heavy))
+                    Text(activeChain?.name ?? "Home")
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    if isChainApplying {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .heavy))
+                    }
+                }
+                .foregroundStyle(activeChain == nil ? .secondary : SCTheme.Colors.accentPink)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule().fill(
+                        (activeChain == nil ? Color.secondary : SCTheme.Colors.accentPink)
+                            .opacity(0.12)
+                    )
+                )
+            }
+            .disabled(isChainApplying)
+            Spacer()
+        }
+    }
+
+    private func inferInitialChain() -> Chain? {
+        guard let firstSource = meal.items.first(where: { ($0.matchedSourceId ?? "usda") != "usda" })?.matchedSourceId
+        else { return nil }
+        return availableChains.first { $0.slug == firstSource }
+    }
+
+    private func applyChain(_ chain: Chain) {
+        isChainApplying = true
+        activeChain = chain
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        Task {
+            var updated = meal.items
+            for index in updated.indices {
+                guard let match = await onChainReapply(updated[index], chain.name, meal.plateContext)
+                else { continue }
+                updated[index] = apply(match: match, to: updated[index])
+            }
+            await MainActor.run {
+                meal.items = updated
+                meal.recomputeTotals()
+                isChainApplying = false
+            }
+        }
+    }
+
+    private func applyChainReset() {
+        isChainApplying = true
+        activeChain = nil
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        Task {
+            let restored = pristineItemsProvider() ?? meal.items
+            await MainActor.run {
+                meal.items = restored
+                meal.recomputeTotals()
+                isChainApplying = false
+            }
+        }
+    }
+
+    private func apply(match: NutritionMatch, to item: MealItem) -> MealItem {
+        var copy = item
+        let baselinePer100g: NutritionFacts = copy.gramsEstimate > 0
+            ? match.nutrition.scaled(by: 100.0 / copy.gramsEstimate)
+            : match.nutrition
+        copy.usdaFdcId = {
+            guard match.sourceId == "usda",
+                  let ext = match.externalId, let id = Int(ext) else { return nil }
+            return id
+        }()
+        copy.usdaDescription = match.displayName
+        copy.matchedSourceId = match.sourceId
+        copy.matchConfidence = match.confidence
+        copy.nutrition = match.nutrition
+        copy.baselinePer100g = baselinePer100g
+        copy.availableSizeOptions = match.sizeOptions
+        copy.selectedSizeKey = match.selectedSizeKey
+        return copy
     }
 
     // MARK: Totals card
