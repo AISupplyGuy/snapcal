@@ -193,10 +193,18 @@ private struct TodayMealRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(meal.mealName)
-                    .font(.system(size: 17, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(meal.mealName)
+                        .font(.system(size: 17, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    if meal.needsVerification {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12, weight: .heavy))
+                            .foregroundStyle(SCTheme.Colors.accentOrange)
+                            .accessibilityLabel("Needs verification")
+                    }
+                }
                 Text(timeText)
                     .font(SCTheme.Type_.caption())
                     .foregroundStyle(.secondary)

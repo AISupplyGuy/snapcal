@@ -20,6 +20,9 @@ struct MealCardView: View {
                 photoBlock
                 headerBlock
                 chainPickerBlock
+                if meal.needsVerification {
+                    verificationBanner
+                }
                 totalsCard
                 itemsList
                 saveButton
@@ -125,6 +128,37 @@ struct MealCardView: View {
             .disabled(isChainApplying)
             Spacer()
         }
+    }
+
+    // Surfaced when the pipeline flagged this meal via Layer 5 — Flash and
+    // Pro disagreed by >25% on calories. Numbers are shown in good faith but
+    // with a visible caveat so the user slides to double-check before saving.
+    private var verificationBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 18, weight: .heavy))
+                .foregroundStyle(SCTheme.Colors.accentOrange)
+                .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Double-check these numbers")
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.primary)
+                Text("The photo was ambiguous, so Flash and Pro landed on different totals. Slide portions below to the amount that feels right before saving.")
+                    .font(SCTheme.Type_.caption())
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: SCTheme.Radius.md)
+                .fill(SCTheme.Colors.accentOrange.opacity(0.12))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: SCTheme.Radius.md)
+                .stroke(SCTheme.Colors.accentOrange.opacity(0.35), lineWidth: 1)
+        )
     }
 
     private func inferInitialChain() -> Chain? {
