@@ -178,6 +178,7 @@ final class TrackViewModel {
                     photoFilename: updated.photoFilename,
                     foodName: new.name,
                     usdaFdcId: new.usdaFdcId,
+                    matchedSourceId: new.matchedSourceId,
                     originalGrams: old.gramsEstimate,
                     correctedGrams: new.gramsEstimate,
                     originalNutrition: old.nutrition,

@@ -24,13 +24,14 @@ actor MealAnalysisPipeline {
 
     func analyze(imageJPEG: Data) async throws -> MealEntry {
         let supportedChains = await chainMenu?.supportedChainNames() ?? []
+        let calibration = PortionCalibration(events: await CorrectionLog.shared.allEvents())
 
         // Step 1: Flash call.
         let flashId = try await gemini.identifyMeal(
             imageJPEG: imageJPEG,
             supportedChains: supportedChains
         )
-        var mealItems = await resolveItems(for: flashId)
+        var mealItems = Self.applyCalibration(to: await resolveItems(for: flashId), using: calibration)
         var modelTier = "flash"
         var needsVerification = false
 
@@ -66,7 +67,7 @@ actor MealAnalysisPipeline {
                 print("[Pipeline] Flash=\(Int(flashCals))cal Pro=\(Int(proCals))cal divergence=\(String(format: "%.2f", divergence))")
                 #endif
 
-                mealItems = proItems
+                mealItems = Self.applyCalibration(to: proItems, using: calibration)
                 modelTier = divergence > Self.divergenceThreshold ? "flash+pro" : "pro"
                 needsVerification = divergence > Self.divergenceThreshold
             } catch {
@@ -138,6 +139,20 @@ actor MealAnalysisPipeline {
             return pairs
         }
         return indexedItems.sorted { $0.0 < $1.0 }.map(\.1)
+    }
+
+    // Apply any per-food rolling ratios that have accumulated from prior
+    // user corrections. Pre-scales gramsEstimate + nutrition so the meal
+    // card shows a personalized starting point on subsequent snaps.
+    private static func applyCalibration(to items: [MealItem], using calibration: PortionCalibration) -> [MealItem] {
+        items.map { item in
+            guard let ratio = calibration.ratio(for: item), ratio > 0, ratio != 1 else { return item }
+            let nextGrams = max(5.0, item.gramsEstimate * ratio)
+            var calibrated = item
+            calibrated.gramsEstimate = nextGrams
+            calibrated.nutrition = item.baselinePer100g.scaled(by: nextGrams / 100.0)
+            return calibrated
+        }
     }
 
     // Normalize the Gemini portion to grams. For cup/slice/piece we don't have a generic conversion,
