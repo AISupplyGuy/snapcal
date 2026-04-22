@@ -51,6 +51,7 @@ final class UserProfileStore {
 enum ProfilePrefsKeys {
     static let mealReminders = "SnapCal.prefs.mealReminders.v1"
     static let appearance = "SnapCal.prefs.appearance.v1" // "system" | "light" | "dark"
+    static let weightUnit = "SnapCal.prefs.weightUnit.v1" // "pounds" | "kilograms"
 }
 
 enum AppearancePreference: String, CaseIterable, Identifiable {

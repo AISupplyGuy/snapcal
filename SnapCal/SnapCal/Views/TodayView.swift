@@ -1,14 +1,22 @@
 import SwiftUI
+import Charts
 
-// Replaces the old IdlePrompt. Shows today's daily totals + ring and the list
-// of meals already logged today, plus the primary "Snap a meal" CTA.
-// Reads from the shared MealDiary so saves from elsewhere update in place.
+// Track tab. Single scrollable page: today's rings + meals, weight
+// log/chart, then a summary of goals with a deep link to Profile >
+// Daily Targets for editing. Reads from MealDiary / WeightLog /
+// GoalsStore so saves from elsewhere update in place.
 
 struct TodayView: View {
     let onTapCamera: () -> Void
     let lidarEnabled: Bool
     private let diary = MealDiary.shared
     private let goalsStore = GoalsStore.shared
+    private let weightLog = WeightLog.shared
+
+    @State private var showingLogWeight = false
+    @AppStorage(ProfilePrefsKeys.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
+
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
 
     var body: some View {
         List {
@@ -59,10 +67,170 @@ struct TodayView: View {
                 }
             }
 
+            Section {
+                weightCard
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 24, leading: 20, bottom: 0, trailing: 20))
+
+            Section {
+                goalsSummaryCard
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 0, trailing: 20))
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 1)
+        .sheet(isPresented: $showingLogWeight) {
+            LogWeightSheet()
+                .presentationDetents([.medium])
+        }
+    }
+
+    // MARK: Weight
+
+    private var weightCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Weight")
+                        .font(SCTheme.Type_.kicker())
+                        .tracking(1.0)
+                        .foregroundStyle(SCTheme.Colors.proteinBlue)
+                    if let latest = weightLog.latest {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(formatWeight(latest))
+                                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.primary)
+                            Text(weightUnit.label)
+                                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.secondary)
+                        }
+                        if let delta = weightLog.change(overLastDays: 30, unit: weightUnit) {
+                            let up = delta >= 0
+                            Text("\(up ? "+" : "")\(String(format: "%.1f", delta)) \(weightUnit.label) in 30 days")
+                                .font(SCTheme.Type_.caption())
+                                .foregroundStyle(up ? SCTheme.Colors.accentPink : SCTheme.Colors.carbGreen)
+                        }
+                    } else {
+                        Text("No weight logged yet")
+                            .font(SCTheme.Type_.cardTitle())
+                            .foregroundStyle(.primary)
+                    }
+                }
+                Spacer()
+                Button {
+                    showingLogWeight = true
+                } label: {
+                    Label("Log", systemImage: "plus")
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        .foregroundStyle(SCTheme.Colors.accentPink)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(SCTheme.Colors.accentPink.opacity(0.14), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            if weightLog.entries.count >= 2 {
+                weightChart
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .scCardStyle()
+    }
+
+    private var weightChart: some View {
+        let recent = Array(weightLog.entries.suffix(30))
+        return Chart {
+            ForEach(recent) { entry in
+                LineMark(
+                    x: .value("Date", entry.measuredAt),
+                    y: .value(weightUnit.label, weightUnit == .kilograms ? entry.kilograms : entry.pounds)
+                )
+                .interpolationMethod(.monotone)
+                .foregroundStyle(SCTheme.Colors.proteinBlue)
+                PointMark(
+                    x: .value("Date", entry.measuredAt),
+                    y: .value(weightUnit.label, weightUnit == .kilograms ? entry.kilograms : entry.pounds)
+                )
+                .foregroundStyle(SCTheme.Colors.proteinBlue)
+                .symbolSize(24)
+            }
+        }
+        .frame(height: 120)
+        .chartYAxis {
+            AxisMarks(position: .leading) { _ in
+                AxisGridLine().foregroundStyle(.primary.opacity(0.05))
+                AxisValueLabel().foregroundStyle(.secondary)
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .day, count: max(1, recent.count / 4))) { _ in
+                AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func formatWeight(_ entry: WeightEntry) -> String {
+        let value = weightUnit == .kilograms ? entry.kilograms : entry.pounds
+        return String(format: "%.1f", value)
+    }
+
+    // MARK: Goals summary
+
+    private var goalsSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("GOALS")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .tracking(1.0)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                NavigationLink {
+                    DailyTargetsView()
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Edit")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .heavy))
+                    }
+                    .foregroundStyle(SCTheme.Colors.accentPink)
+                }
+            }
+
+            let goals = goalsStore.goals
+            HStack(spacing: 8) {
+                goalPill(label: "kcal", value: Int(goals.calories), tint: SCTheme.Colors.accentPink, soft: SCTheme.Colors.caloriesSoft)
+                goalPill(label: "P", value: Int(goals.proteinGrams), tint: SCTheme.Colors.proteinBlue, soft: SCTheme.Colors.proteinSoft)
+                goalPill(label: "C", value: Int(goals.carbGrams), tint: SCTheme.Colors.carbGreen, soft: SCTheme.Colors.carbSoft)
+                goalPill(label: "F", value: Int(goals.fatGrams), tint: SCTheme.Colors.accentOrange, soft: SCTheme.Colors.caloriesSoft)
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .scCardStyle()
+    }
+
+    private func goalPill(label: String, value: Int, tint: Color, soft: Color) -> some View {
+        VStack(spacing: 4) {
+            Text("\(value)")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(.primary)
+            Text(label)
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(tint)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(soft, in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: Header
@@ -70,7 +238,7 @@ struct TodayView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                SCKickerPill(text: "Today", tint: SCTheme.Colors.accentOrange)
+                SCKickerPill(text: "Track", tint: SCTheme.Colors.accentOrange)
                 if lidarEnabled {
                     SCKickerPill(text: "LiDAR enabled", tint: SCTheme.Colors.standTeal)
                 }

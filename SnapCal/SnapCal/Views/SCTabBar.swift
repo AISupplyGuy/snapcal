@@ -23,7 +23,7 @@ enum SCTab: Hashable, CaseIterable {
         switch self {
         case .pantry:   return "cabinet.fill"
         case .cook:     return "fork.knife"
-        case .track:    return "camera.fill"
+        case .track:    return "circle.grid.cross.fill"
         case .insights: return "chart.line.uptrend.xyaxis"
         case .profile:  return "person.crop.circle.fill"
         }
@@ -32,17 +32,15 @@ enum SCTab: Hashable, CaseIterable {
 
 struct SCTabBar: View {
     @Binding var selection: SCTab
-    var onTrackTap: () -> Void = {}
-
-    private let sideTabs: [SCTab] = [.pantry, .cook, .insights, .profile]
+    var onCameraTap: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 0) {
-            sideTab(.pantry)
-            sideTab(.cook)
-            Color.clear.frame(width: 78)
-            sideTab(.insights)
-            sideTab(.profile)
+            tabCell(.pantry)
+            tabCell(.cook)
+            tabCell(.track)
+            tabCell(.insights)
+            tabCell(.profile)
         }
         .frame(height: 56)
         .padding(.horizontal, 6)
@@ -54,21 +52,18 @@ struct SCTabBar: View {
         .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
         .padding(.horizontal, 14)
         .overlay(alignment: .top) {
+            // Floating camera FAB — always opens the camera, no tab switch.
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                if selection == .track {
-                    onTrackTap()
-                } else {
-                    selection = .track
-                }
+                onCameraTap()
             } label: {
                 ZStack {
                     Circle()
                         .fill(SCTheme.Gradients.cta)
-                        .frame(width: 64, height: 64)
+                        .frame(width: 58, height: 58)
                         .shadow(color: SCTheme.Colors.accentPink.opacity(0.35), radius: 10, y: 4)
-                    Image(systemName: SCTab.track.systemImage)
-                        .font(.system(size: 24, weight: .heavy))
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(.white)
                 }
                 .overlay(
@@ -78,12 +73,12 @@ struct SCTabBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Snap a meal")
-            .offset(y: -22)
+            .offset(y: -42)
         }
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func sideTab(_ tab: SCTab) -> some View {
+    private func tabCell(_ tab: SCTab) -> some View {
         let isActive = selection == tab
         return Button {
             UISelectionFeedbackGenerator().selectionChanged()

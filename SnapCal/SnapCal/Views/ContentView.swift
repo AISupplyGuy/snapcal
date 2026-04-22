@@ -28,9 +28,13 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                SCTabBar(selection: $selection) {
+                SCTabBar(selection: $selection, onCameraTap: {
+                    // Camera is always available — don't force a tab switch.
+                    // Ensures the capture sheet attaches to the existing
+                    // Track navigation stack that owns analyze/commit flow.
+                    selection = .track
                     showingCamera = true
-                }
+                })
                 .padding(.bottom, 4)
             }
             .frame(height: 88)
