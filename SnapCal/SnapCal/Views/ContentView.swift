@@ -14,6 +14,21 @@ struct ContentView: View {
                     Label("Track", systemImage: "camera.viewfinder")
                 }
 
+            PantryView()
+                .tabItem {
+                    Label("Pantry", systemImage: "cabinet.fill")
+                }
+
+            CookView()
+                .tabItem {
+                    Label("Cook", systemImage: "fork.knife")
+                }
+
+            InsightsView()
+                .tabItem {
+                    Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
+                }
+
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.crop.circle.fill")
