@@ -59,12 +59,6 @@ struct TodayView: View {
                 }
             }
 
-            Section {
-                snapCTA
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 24, trailing: 20))
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -173,16 +167,6 @@ struct TodayView: View {
         .scCardStyle()
     }
 
-    // MARK: CTA
-
-    private var snapCTA: some View {
-        Button(action: onTapCamera) {
-            Label("Snap a meal", systemImage: "camera.fill")
-                .scCTAStyle()
-        }
-        .buttonStyle(.plain)
-        .padding(.top, 4)
-    }
 }
 
 // MARK: - Meal row (one per logged meal)
