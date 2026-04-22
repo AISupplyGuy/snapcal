@@ -9,24 +9,27 @@ struct ContentView: View {
     @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
 
     var body: some View {
-        Group {
-            switch selection {
-            case .pantry:   PantryView()
-            case .cook:     CookView()
-            case .track:    todayTab
-            case .insights: InsightsView()
-            case .profile:  ProfileView()
+        ZStack(alignment: .bottom) {
+            Group {
+                switch selection {
+                case .pantry:   PantryView()
+                case .cook:     CookView()
+                case .track:    todayTab
+                case .insights: InsightsView()
+                case .profile:  ProfileView()
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Reserve space at the bottom so scroll content doesn't hide under
-        // the floating bar.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Reserve space at the bottom so scroll content clears the
+            // floating tab bar (which is drawn on top of this container).
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear.frame(height: 96)
+            }
+
             SCTabBar(selection: $selection) {
-                // Secondary tap on Track while already on Track = open camera.
                 showingCamera = true
             }
-            .background(Color.clear)
+            .padding(.bottom, 4)
         }
         .preferredColorScheme(resolvedScheme)
     }

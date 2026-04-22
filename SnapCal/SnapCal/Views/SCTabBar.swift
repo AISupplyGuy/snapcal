@@ -37,33 +37,29 @@ struct SCTabBar: View {
     private let sideTabs: [SCTab] = [.pantry, .cook, .insights, .profile]
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Side pills — 4 flat tabs with Track carved out of the middle.
-            HStack(spacing: 0) {
-                ForEach(sideTabs.prefix(2), id: \.self) { tab in
-                    sideTab(tab)
-                }
-                // Slot for the center FAB — spaced but empty so the FAB
-                // floats above it.
-                Color.clear.frame(width: 78)
-                ForEach(sideTabs.suffix(2), id: \.self) { tab in
-                    sideTab(tab)
-                }
-            }
-            .padding(.horizontal, 6)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-            .background(
-                Capsule()
-                    .fill(.ultraThinMaterial)
-                    .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-            )
-            .overlay(
-                Capsule()
-                    .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
-            )
-
-            // Lifted Track FAB — sits above the pill, overlapping the top edge.
+        HStack(spacing: 0) {
+            sideTab(.pantry)
+            sideTab(.cook)
+            // Center slot for the FAB — same width as a side tab so the
+            // layout stays balanced.
+            Color.clear.frame(width: 78)
+            sideTab(.insights)
+            sideTab(.profile)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 10)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
+        )
+        .padding(.horizontal, 14)
+        .overlay(alignment: .top) {
+            // Lifted Track FAB — overlaps the capsule's top edge.
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 if selection == .track {
@@ -88,10 +84,8 @@ struct SCTabBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Snap a meal")
-            .offset(y: -18)
+            .offset(y: -24)
         }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 6)
     }
 
     private func sideTab(_ tab: SCTab) -> some View {
