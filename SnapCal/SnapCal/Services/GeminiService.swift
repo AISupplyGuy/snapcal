@@ -29,14 +29,14 @@ actor GeminiService {
     var defaultModel: String { model }
     var escalationModel: String { proModel }
 
-    // Read from Info.plist / env. Never commit the key.
+    // Resolution order: process env (Xcode scheme → only present when the
+    // debugger is attached) → Secrets.plist bundled with the app (gitignored)
+    // → Info.plist. Secrets.plist is what makes the app work when launched
+    // standalone from the home screen.
     init(
-        apiKey: String? = ProcessInfo.processInfo.environment["GEMINI_API_KEY"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_API_KEY") as? String),
-        model: String? = ProcessInfo.processInfo.environment["GEMINI_MODEL"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_MODEL") as? String),
-        proModel: String? = ProcessInfo.processInfo.environment["GEMINI_PRO_MODEL"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "GEMINI_PRO_MODEL") as? String),
+        apiKey: String? = GeminiService.resolve("GEMINI_API_KEY"),
+        model: String? = GeminiService.resolve("GEMINI_MODEL"),
+        proModel: String? = GeminiService.resolve("GEMINI_PRO_MODEL"),
         session: URLSession = .shared
     ) throws {
         guard let key = apiKey, !key.isEmpty else { throw GeminiError.missingAPIKey }
@@ -48,6 +48,31 @@ actor GeminiService {
         // to gemini-3.1-pro-preview for the bleeding-edge tier).
         self.proModel = (proModel?.isEmpty == false ? proModel : nil) ?? "gemini-3-pro-preview"
         self.session = session
+    }
+
+    // Look up a config value across all three sources. Returns nil if none
+    // provide a non-empty string.
+    static func resolve(_ key: String) -> String? {
+        if let v = ProcessInfo.processInfo.environment[key], !v.isEmpty { return v }
+        if let v = Self.secretsPlistValue(key), !v.isEmpty { return v }
+        if let v = Bundle.main.object(forInfoDictionaryKey: key) as? String, !v.isEmpty { return v }
+        return nil
+    }
+
+    // Load Secrets.plist once per process. Bundled into the app at build
+    // time (gitignored on disk), which lets the app work when launched
+    // from the home screen with no debugger attached.
+    private static let secretsPlist: [String: Any]? = {
+        guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
+              let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+                as? [String: Any]
+        else { return nil }
+        return plist
+    }()
+
+    private static func secretsPlistValue(_ key: String) -> String? {
+        secretsPlist?[key] as? String
     }
 
     func identifyMeal(

@@ -11,6 +11,7 @@
 *.env
 !.env.example
 !.env.*.example
+SnapCal/SnapCal/Secrets.plist
 
 # Xcode
 build/
