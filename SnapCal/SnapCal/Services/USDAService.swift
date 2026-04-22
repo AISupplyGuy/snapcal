@@ -22,8 +22,7 @@ actor USDAService {
     private var cache: [String: USDAFood] = [:]
 
     init(
-        apiKey: String? = ProcessInfo.processInfo.environment["USDA_API_KEY"]
-            ?? (Bundle.main.object(forInfoDictionaryKey: "USDA_API_KEY") as? String),
+        apiKey: String? = GeminiService.resolve("USDA_API_KEY"),
         session: URLSession = .shared
     ) throws {
         guard let key = apiKey, !key.isEmpty else { throw USDAError.missingAPIKey }
