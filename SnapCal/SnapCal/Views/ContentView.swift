@@ -26,10 +26,15 @@ struct ContentView: View {
                 Color.clear.frame(height: 96)
             }
 
-            SCTabBar(selection: $selection) {
-                showingCamera = true
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                SCTabBar(selection: $selection) {
+                    showingCamera = true
+                }
+                .padding(.bottom, 4)
             }
-            .padding(.bottom, 4)
+            .frame(height: 88)
+            .allowsHitTesting(true)
         }
         .preferredColorScheme(resolvedScheme)
     }

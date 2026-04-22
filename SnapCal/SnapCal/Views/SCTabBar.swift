@@ -40,26 +40,20 @@ struct SCTabBar: View {
         HStack(spacing: 0) {
             sideTab(.pantry)
             sideTab(.cook)
-            // Center slot for the FAB — same width as a side tab so the
-            // layout stays balanced.
             Color.clear.frame(width: 78)
             sideTab(.insights)
             sideTab(.profile)
         }
+        .frame(height: 56)
         .padding(.horizontal, 6)
-        .padding(.vertical, 10)
-        .background(
-            Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
-        )
+        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
         .overlay(
             Capsule(style: .continuous)
                 .strokeBorder(.primary.opacity(0.06), lineWidth: 1)
         )
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
         .padding(.horizontal, 14)
         .overlay(alignment: .top) {
-            // Lifted Track FAB — overlaps the capsule's top edge.
             Button {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 if selection == .track {
@@ -84,8 +78,9 @@ struct SCTabBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Snap a meal")
-            .offset(y: -24)
+            .offset(y: -22)
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func sideTab(_ tab: SCTab) -> some View {
