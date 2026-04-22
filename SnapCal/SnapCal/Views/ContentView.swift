@@ -3,38 +3,31 @@ import SwiftUI
 struct ContentView: View {
     @State private var viewModel = TrackViewModel()
     @State private var showingCamera = false
+    @State private var selection: SCTab = .track
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
 
     var body: some View {
-        TabView {
-            todayTab
-                .tabItem {
-                    Label("Track", systemImage: "camera.viewfinder")
-                }
-
-            PantryView()
-                .tabItem {
-                    Label("Pantry", systemImage: "cabinet.fill")
-                }
-
-            CookView()
-                .tabItem {
-                    Label("Cook", systemImage: "fork.knife")
-                }
-
-            InsightsView()
-                .tabItem {
-                    Label("Insights", systemImage: "chart.line.uptrend.xyaxis")
-                }
-
-            ProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: "person.crop.circle.fill")
-                }
+        Group {
+            switch selection {
+            case .pantry:   PantryView()
+            case .cook:     CookView()
+            case .track:    todayTab
+            case .insights: InsightsView()
+            case .profile:  ProfileView()
+            }
         }
-        .tint(SCTheme.Colors.accentPink)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Reserve space at the bottom so scroll content doesn't hide under
+        // the floating bar.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SCTabBar(selection: $selection) {
+                // Secondary tap on Track while already on Track = open camera.
+                showingCamera = true
+            }
+            .background(Color.clear)
+        }
         .preferredColorScheme(resolvedScheme)
     }
 
