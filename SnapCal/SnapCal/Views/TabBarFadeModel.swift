@@ -37,13 +37,15 @@ final class TabBarFadeModel {
 
 extension View {
     // Attach to any ScrollView/List so its vertical content offset drives
-    // the shared tab bar fade. Safe to use on all tabs — whichever tab is
-    // active will own the last update.
-    func tabBarFadesOnScroll() -> some View {
+    // the shared tab bar fade. Pass `scale > 1` on pages where the bar
+    // should fade sooner per unit of scroll (e.g. Track has more content
+    // above the fold than Insights, so the same absolute offset covers
+    // less of what the user sees).
+    func tabBarFadesOnScroll(scale: CGFloat = 1.0) -> some View {
         self.onScrollGeometryChange(for: CGFloat.self) { geo in
             max(0, geo.contentOffset.y)
         } action: { _, newValue in
-            TabBarFadeModel.shared.update(offset: newValue)
+            TabBarFadeModel.shared.update(offset: newValue * scale)
         }
     }
 }

@@ -70,7 +70,7 @@ struct TodayView: View {
             .padding(.bottom, 24)
         }
         .scrollIndicators(.hidden)
-        .tabBarFadesOnScroll()
+        .tabBarFadesOnScroll(scale: 2.0)
         .sheet(isPresented: $showingLogWeight) {
             LogWeightSheet()
                 .presentationDetents([.medium])
