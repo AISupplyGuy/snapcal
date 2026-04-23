@@ -19,43 +19,27 @@ struct TodayView: View {
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
 
     var body: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
                 header
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+                    .padding(.top, 4)
 
-            Section {
                 dailyRing
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 0, trailing: 20))
 
-            if diary.todaysMeals.isEmpty {
-                Section {
+                if diary.todaysMeals.isEmpty {
                     emptyState
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 20))
-            } else {
-                Section {
+                        .padding(.top, 4)
+                } else {
                     Text("Meals")
                         .font(SCTheme.Type_.kicker())
                         .tracking(1.2)
                         .foregroundStyle(.secondary)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 4, trailing: 20))
+                        .padding(.top, 6)
 
                     ForEach(diary.todaysMeals) { meal in
                         ZStack {
                             // Invisible NavigationLink provides the push
-                            // behavior without the default trailing chevron
-                            // that SwiftUI adds to list-row NavigationLinks.
+                            // behavior without a trailing chevron.
                             NavigationLink {
                                 MealDetailView(meal: meal)
                             } label: {
@@ -65,37 +49,27 @@ struct TodayView: View {
 
                             TodayMealRow(meal: meal)
                         }
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        .contextMenu {
                             Button(role: .destructive) {
                                 diary.delete(meal)
                             } label: {
-                                Label("Delete", systemImage: "trash")
+                                Label("Delete meal", systemImage: "trash")
                             }
                         }
                     }
                 }
-            }
 
-            Section {
                 weightCard
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 24, leading: 20, bottom: 0, trailing: 20))
+                    .padding(.top, 12)
 
-            Section {
                 goalsSummaryCard
+                    .padding(.top, 2)
             }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 14, leading: 20, bottom: 0, trailing: 20))
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .environment(\.defaultMinListRowHeight, 1)
+        .scrollIndicators(.hidden)
         .tabBarFadesOnScroll()
         .sheet(isPresented: $showingLogWeight) {
             LogWeightSheet()
