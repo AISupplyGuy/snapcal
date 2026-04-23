@@ -27,6 +27,7 @@ struct InsightsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
+            .tabBarFadesOnScroll()
             .navigationTitle("")
             .onAppear(perform: recompute)
             .onChange(of: range) { _, _ in recompute() }

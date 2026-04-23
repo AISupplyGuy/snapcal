@@ -4,6 +4,7 @@ struct ContentView: View {
     @State private var viewModel = TrackViewModel()
     @State private var showingCamera = false
     @State private var selection: SCTab = .track
+    @State private var fadeModel = TabBarFadeModel.shared
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
@@ -38,9 +39,14 @@ struct ContentView: View {
                 .padding(.bottom, 4)
             }
             .frame(height: 88)
-            .allowsHitTesting(true)
+            .opacity(fadeModel.opacity)
+            .animation(.easeOut(duration: 0.18), value: fadeModel.opacity)
+            .allowsHitTesting(fadeModel.opacity > 0.3)
         }
         .preferredColorScheme(resolvedScheme)
+        .onChange(of: selection) { _, _ in
+            TabBarFadeModel.shared.reset()
+        }
     }
 
     private var resolvedScheme: ColorScheme? {

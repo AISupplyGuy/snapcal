@@ -96,6 +96,7 @@ struct TodayView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 1)
+        .tabBarFadesOnScroll()
         .sheet(isPresented: $showingLogWeight) {
             LogWeightSheet()
                 .presentationDetents([.medium])

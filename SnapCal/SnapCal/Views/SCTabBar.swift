@@ -58,14 +58,10 @@ struct SCTabBar: View {
                 onCameraTap()
             } label: {
                 ZStack {
-                    // Opaque backing ring so content behind doesn't bleed.
-                    Circle()
-                        .fill(Color(.systemBackground))
-                        .frame(width: 70, height: 70)
                     Circle()
                         .fill(SCTheme.Gradients.cta)
                         .frame(width: 60, height: 60)
-                        .shadow(color: SCTheme.Colors.accentPink.opacity(0.4), radius: 12, y: 4)
+                        .shadow(color: SCTheme.Colors.accentPink.opacity(0.45), radius: 14, y: 6)
                     Image(systemName: "camera.fill")
                         .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(.white)
