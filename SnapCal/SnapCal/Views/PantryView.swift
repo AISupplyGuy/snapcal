@@ -21,6 +21,9 @@ struct PantryView: View {
                             section(for: group.category, items: group.items)
                         }
                     }
+
+                    comingSoonBlock
+                        .padding(.top, 8)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 8)
@@ -146,6 +149,34 @@ struct PantryView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: Coming soon
+
+    private var comingSoonBlock: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("COMING SOON")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .tracking(1.1)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            ComingSoonCard(
+                icon: "barcode.viewfinder",
+                title: "Barcode scanning",
+                copy: "Point at a package, the Open Food Facts lookup drops it in with macros already set."
+            )
+            ComingSoonCard(
+                icon: "doc.text.viewfinder",
+                title: "Receipt capture",
+                copy: "Snap a grocery receipt and we'll queue everything into Pantry in one pass."
+            )
+            ComingSoonCard(
+                icon: "calendar.badge.clock",
+                title: "Expiration nudges",
+                copy: "Soft reminders before ingredients go off, so Cook suggests recipes using what's running out first."
+            )
         }
     }
 }

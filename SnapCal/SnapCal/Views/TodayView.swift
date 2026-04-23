@@ -12,8 +12,10 @@ struct TodayView: View {
     private let diary = MealDiary.shared
     private let goalsStore = GoalsStore.shared
     private let weightLog = WeightLog.shared
+    @State private var goalStore = WeightGoalStore.shared
 
     @State private var showingLogWeight = false
+    @State private var showingEditGoal = false
     @AppStorage(ProfilePrefsKeys.weightUnit) private var weightUnitRaw = WeightUnit.pounds.rawValue
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .pounds }
@@ -37,18 +39,12 @@ struct TodayView: View {
                         .padding(.top, 6)
 
                     ForEach(diary.todaysMeals) { meal in
-                        ZStack {
-                            // Invisible NavigationLink provides the push
-                            // behavior without a trailing chevron.
-                            NavigationLink {
-                                MealDetailView(meal: meal)
-                            } label: {
-                                EmptyView()
-                            }
-                            .opacity(0)
-
+                        NavigationLink {
+                            MealDetailView(meal: meal)
+                        } label: {
                             TodayMealRow(meal: meal)
                         }
+                        .buttonStyle(.plain)
                         .contextMenu {
                             Button(role: .destructive) {
                                 diary.delete(meal)
@@ -62,7 +58,7 @@ struct TodayView: View {
                 weightCard
                     .padding(.top, 12)
 
-                goalsSummaryCard
+                weightGoalCard
                     .padding(.top, 2)
             }
             .padding(.horizontal, 20)
@@ -74,6 +70,10 @@ struct TodayView: View {
         .sheet(isPresented: $showingLogWeight) {
             LogWeightSheet()
                 .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showingEditGoal) {
+            EditWeightGoalSheet(existing: goalStore.goal)
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -169,35 +169,34 @@ struct TodayView: View {
         return String(format: "%.1f", value)
     }
 
-    // MARK: Goals summary
+    // MARK: Weight goal
 
-    private var goalsSummaryCard: some View {
+    private var weightGoalCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("GOALS")
+                Text("GOAL")
                     .font(.system(size: 11, weight: .heavy, design: .rounded))
                     .tracking(1.0)
                     .foregroundStyle(.secondary)
                 Spacer()
-                NavigationLink {
-                    DailyTargetsView()
+                Button {
+                    showingEditGoal = true
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Edit")
+                        Text(goalStore.goal == nil ? "Set" : "Edit")
                             .font(.system(size: 13, weight: .heavy, design: .rounded))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 11, weight: .heavy))
                     }
                     .foregroundStyle(SCTheme.Colors.accentPink)
                 }
+                .buttonStyle(.plain)
             }
 
-            let goals = goalsStore.goals
-            HStack(spacing: 8) {
-                goalPill(label: "kcal", value: Int(goals.calories), tint: SCTheme.Colors.accentPink, soft: SCTheme.Colors.caloriesSoft)
-                goalPill(label: "P", value: Int(goals.proteinGrams), tint: SCTheme.Colors.proteinBlue, soft: SCTheme.Colors.proteinSoft)
-                goalPill(label: "C", value: Int(goals.carbGrams), tint: SCTheme.Colors.carbGreen, soft: SCTheme.Colors.carbSoft)
-                goalPill(label: "F", value: Int(goals.fatGrams), tint: SCTheme.Colors.accentOrange, soft: SCTheme.Colors.caloriesSoft)
+            if let goal = goalStore.goal, let current = weightLog.latest?.kilograms {
+                weightGoalContent(goal: goal, current: current)
+            } else {
+                goalEmptyState
             }
         }
         .padding(18)
@@ -205,19 +204,181 @@ struct TodayView: View {
         .scCardStyle()
     }
 
-    private func goalPill(label: String, value: Int, tint: Color, soft: Color) -> some View {
-        VStack(spacing: 4) {
-            Text("\(value)")
-                .font(.system(size: 18, weight: .heavy, design: .rounded))
-                .foregroundStyle(.primary)
-            Text(label)
-                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                .tracking(1.0)
-                .foregroundStyle(tint)
+    private var goalEmptyState: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: "target")
+                .font(.system(size: 22, weight: .heavy))
+                .foregroundStyle(SCTheme.Colors.accentPink)
+                .frame(width: 40, height: 40)
+                .background(SCTheme.Colors.accentPink.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(weightLog.latest == nil ? "Log a weight first" : "Set a weight goal")
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.primary)
+                Text(weightLog.latest == nil
+                     ? "Tap Log above, then come back here to set where you're headed."
+                     : "Pick a target and a weekly pace. We'll cheer you on the whole way there.")
+                    .font(SCTheme.Type_.caption())
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .background(soft, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func weightGoalContent(goal: WeightGoal, current: Double) -> some View {
+        let progress = goal.progress(currentKilograms: current)
+        let pace = goal.observedWeeklyPace(currentKilograms: current)
+        let targetDisplay = weightUnit == .kilograms ? goal.targetKilograms : goal.targetKilograms * 2.20462
+        let currentDisplay = weightUnit == .kilograms ? current : current * 2.20462
+        let remaining = remainingDisplay(goal: goal, current: current)
+        let paceDisplay = weightUnit == .kilograms ? pace : pace * 2.20462
+        let targetPace = weightUnit == .kilograms ? goal.weeklyRateKilograms : goal.weeklyRateKilograms * 2.20462
+
+        return VStack(alignment: .leading, spacing: 14) {
+            // Motivational headline — adapts to progress.
+            Text(motivationalHeadline(progress: progress, goal: goal))
+                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Current vs target.
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Now")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .tracking(1.0)
+                        .foregroundStyle(.secondary)
+                    Text("\(String(format: "%.1f", currentDisplay)) \(weightUnit.label)")
+                        .font(.system(size: 20, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.primary)
+                }
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 11, weight: .heavy))
+                    .foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Target")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .tracking(1.0)
+                        .foregroundStyle(.secondary)
+                    Text("\(String(format: "%.1f", targetDisplay)) \(weightUnit.label)")
+                        .font(.system(size: 20, weight: .heavy, design: .rounded))
+                        .foregroundStyle(SCTheme.Colors.accentPink)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("To go")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .tracking(1.0)
+                        .foregroundStyle(.secondary)
+                    Text(remaining)
+                        .font(.system(size: 20, weight: .heavy, design: .rounded))
+                        .foregroundStyle(SCTheme.Colors.accentOrange)
+                }
+            }
+
+            // Progress bar with milestones.
+            progressTrack(progress: progress)
+
+            // Pace line.
+            if goal.direction != .maintain {
+                paceLine(pace: paceDisplay, target: targetPace)
+            }
+
+            // Milestone badges.
+            milestoneRow(progress: progress)
+        }
+    }
+
+    private func progressTrack(progress: Double) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.08))
+                Capsule()
+                    .fill(SCTheme.Gradients.cta)
+                    .frame(width: max(6, geo.size.width * progress))
+            }
+        }
+        .frame(height: 10)
+    }
+
+    private func paceLine(pace: Double, target: Double) -> some View {
+        let onPace: Bool = {
+            guard target != 0 else { return true }
+            // Same direction as target, within 40% of absolute magnitude.
+            if pace.sign != target.sign { return false }
+            let ratio = abs(pace) / abs(target)
+            return ratio >= 0.6 && ratio <= 1.4
+        }()
+        let label: String = {
+            if pace == 0 { return "Awaiting data…" }
+            let sign = pace >= 0 ? "+" : ""
+            return "\(sign)\(String(format: "%.1f", pace)) \(weightUnit.label)/week"
+        }()
+        return HStack(spacing: 8) {
+            Image(systemName: onPace ? "checkmark.seal.fill" : "hare.fill")
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(onPace ? SCTheme.Colors.carbGreen : SCTheme.Colors.accentOrange)
+            Text(label)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .foregroundStyle(.primary)
+            Text(onPace ? "on pace" : "adjusting")
+                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func milestoneRow(progress: Double) -> some View {
+        HStack(spacing: 6) {
+            ForEach([0.25, 0.5, 0.75, 1.0], id: \.self) { milestone in
+                let hit = progress >= milestone
+                HStack(spacing: 4) {
+                    Image(systemName: hit ? "rosette" : "circle")
+                        .font(.system(size: 11, weight: .heavy))
+                    Text(milestoneLabel(milestone))
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                }
+                .foregroundStyle(hit ? SCTheme.Colors.accentPink : Color.secondary.opacity(0.6))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    (hit ? SCTheme.Colors.accentPink : Color.secondary)
+                        .opacity(hit ? 0.14 : 0.08),
+                    in: Capsule()
+                )
+            }
+        }
+    }
+
+    private func milestoneLabel(_ fraction: Double) -> String {
+        if fraction >= 1.0 { return "Goal" }
+        return "\(Int(fraction * 100))%"
+    }
+
+    private func motivationalHeadline(progress: Double, goal: WeightGoal) -> String {
+        if goal.direction == .maintain {
+            return progress >= 1 ? "Holding steady. Locked in." : "Stay the course."
+        }
+        switch progress {
+        case ..<0.05:  return "Day one. Let's go."
+        case ..<0.25:  return "Early momentum. Keep stacking days."
+        case ..<0.5:   return "Real progress. You're building the habit."
+        case ..<0.75:  return "Over halfway. Don't look back now."
+        case ..<1.0:   return "Almost there. Closing in on the target."
+        default:       return "Goal hit. Pick a new one when you're ready."
+        }
+    }
+
+    private func remainingDisplay(goal: WeightGoal, current: Double) -> String {
+        let remainingKg: Double
+        switch goal.direction {
+        case .lose:     remainingKg = max(0, current - goal.targetKilograms)
+        case .gain:     remainingKg = max(0, goal.targetKilograms - current)
+        case .maintain: remainingKg = abs(current - goal.targetKilograms)
+        }
+        let display = weightUnit == .kilograms ? remainingKg : remainingKg * 2.20462
+        return "\(String(format: "%.1f", display)) \(weightUnit.label)"
     }
 
     // MARK: Header
