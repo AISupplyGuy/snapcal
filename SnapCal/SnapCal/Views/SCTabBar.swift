@@ -73,7 +73,7 @@ struct SCTabBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Snap a meal")
-            .offset(y: -48)
+            .offset(y: -56)
         }
         .fixedSize(horizontal: false, vertical: true)
     }

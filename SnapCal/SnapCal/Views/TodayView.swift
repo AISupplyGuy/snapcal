@@ -52,12 +52,19 @@ struct TodayView: View {
                         .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 4, trailing: 20))
 
                     ForEach(diary.todaysMeals) { meal in
-                        NavigationLink {
-                            MealDetailView(meal: meal)
-                        } label: {
+                        ZStack {
+                            // Invisible NavigationLink provides the push
+                            // behavior without the default trailing chevron
+                            // that SwiftUI adds to list-row NavigationLinks.
+                            NavigationLink {
+                                MealDetailView(meal: meal)
+                            } label: {
+                                EmptyView()
+                            }
+                            .opacity(0)
+
                             TodayMealRow(meal: meal)
                         }
-                        .buttonStyle(.plain)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
