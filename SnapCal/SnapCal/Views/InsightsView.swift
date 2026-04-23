@@ -99,50 +99,82 @@ struct InsightsView: View {
             if snapshot.days.isEmpty {
                 emptyChart
             } else {
-                let goal = goalsStore.goals.calories
-                Chart {
-                    ForEach(snapshot.days) { day in
-                        BarMark(
-                            x: .value("Day", day.date, unit: .day),
-                            y: .value("Calories", day.calories)
-                        )
-                        .foregroundStyle(
-                            day.calories >= goal * 0.9 && day.calories <= goal * 1.1
-                                ? SCTheme.Colors.carbGreen
-                                : SCTheme.Colors.accentOrange
-                        )
-                        .cornerRadius(4)
-                    }
-                    RuleMark(y: .value("Goal", goal))
-                        .foregroundStyle(SCTheme.Colors.accentPink.opacity(0.6))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
-                        .annotation(position: .topTrailing, alignment: .trailing) {
-                            Text("Goal \(Int(goal))")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundStyle(SCTheme.Colors.accentPink)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(SCTheme.Colors.accentPink.opacity(0.12), in: Capsule())
-                        }
-                }
-                .frame(height: 150)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day)) { value in
-                        AxisValueLabel(format: .dateTime.weekday(.narrow))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(position: .leading) { _ in
-                        AxisGridLine().foregroundStyle(.primary.opacity(0.06))
-                        AxisValueLabel().foregroundStyle(.secondary)
-                    }
-                }
+                caloriesChart
             }
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .scCardStyle()
+    }
+
+    // Axis label cadence. 7-day range shows narrow weekday letters; 30-day
+    // uses month/day every 5 days so "TWTFSSM..." doesn't mush together.
+    private var caloriesChart: some View {
+        let goal = goalsStore.goals.calories
+        let stride = range == .week ? 1 : 5
+        return Chart {
+            ForEach(snapshot.days) { day in
+                BarMark(
+                    x: .value("Day", day.date, unit: .day),
+                    y: .value("Calories", day.calories),
+                    width: .ratio(0.65)
+                )
+                .foregroundStyle(
+                    day.calories >= goal * 0.9 && day.calories <= goal * 1.1
+                        ? SCTheme.Colors.carbGreen
+                        : SCTheme.Colors.accentOrange
+                )
+                .cornerRadius(4)
+            }
+            RuleMark(y: .value("Goal", goal))
+                .foregroundStyle(SCTheme.Colors.accentPink.opacity(0.6))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+        }
+        .frame(height: 180)
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .day, count: stride)) { _ in
+                AxisGridLine().foregroundStyle(.clear)
+                AxisTick().foregroundStyle(.primary.opacity(0.15))
+                if range == .week {
+                    AxisValueLabel(format: .dateTime.weekday(.narrow))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                } else {
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day())
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { _ in
+                AxisGridLine().foregroundStyle(.primary.opacity(0.06))
+                AxisValueLabel()
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .chartOverlay { proxy in
+            // Floating goal label pinned inside the plot area — avoids the
+            // right-edge clipping that .annotation(.topTrailing) had.
+            GeometryReader { geo in
+                if let plotFrame = proxy.plotFrame,
+                   let y = proxy.position(forY: goal) {
+                    let frame = geo[plotFrame]
+                    Text("Goal \(Int(goal))")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundStyle(SCTheme.Colors.accentPink)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(SCTheme.Colors.accentPink.opacity(0.14), in: Capsule())
+                        .overlay(Capsule().stroke(SCTheme.Colors.accentPink.opacity(0.35), lineWidth: 0.5))
+                        .position(
+                            x: frame.minX + 42,
+                            y: max(frame.minY + 10, y - 10)
+                        )
+                }
+            }
+        }
     }
 
     private var emptyChart: some View {
