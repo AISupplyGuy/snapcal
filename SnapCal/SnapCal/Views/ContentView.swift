@@ -24,7 +24,7 @@ struct ContentView: View {
             // Reserve space at the bottom so scroll content clears the
             // floating tab bar (which is drawn on top of this container).
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear.frame(height: 140)
+                Color.clear.frame(height: 200)
             }
 
             VStack(spacing: 0) {

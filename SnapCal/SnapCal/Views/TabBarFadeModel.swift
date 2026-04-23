@@ -12,9 +12,9 @@ import Observation
 final class TabBarFadeModel {
     static let shared = TabBarFadeModel()
 
-    private let fadeStart: CGFloat = 60
-    private let fadeEnd: CGFloat = 280
-    private let minOpacity: Double = 0.05
+    private let fadeStart: CGFloat = 40
+    private let fadeEnd: CGFloat = 200
+    private let minOpacity: Double = 0
 
     var opacity: Double = 1.0
 
