@@ -52,17 +52,22 @@ struct TodayView: View {
                         .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 4, trailing: 20))
 
                     ForEach(diary.todaysMeals) { meal in
-                        TodayMealRow(meal: meal)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    diary.delete(meal)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
+                        NavigationLink {
+                            MealDetailView(meal: meal)
+                        } label: {
+                            TodayMealRow(meal: meal)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 5, leading: 20, bottom: 5, trailing: 20))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                diary.delete(meal)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
+                        }
                     }
                 }
             }
