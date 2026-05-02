@@ -164,6 +164,40 @@ final class TrackViewModel {
     // returns the original items as produced by the pipeline.
     var pristineItems: [MealItem]? { originalMeal?.items }
 
+    // Barcode entries skip Gemini and the NutritionRouter — Open Food Facts
+    // already returned an authoritative product. Build a single-item MealEntry
+    // and write straight to the diary. plateContext = .packaged so anomaly
+    // detection / weekly redistribution can later treat these differently.
+    func commitBarcode(product: BarcodeProduct, servings: Double) {
+        let perServing = product.per100g.scaled(by: (product.servingGrams ?? 100) / 100.0)
+        let totalGrams = (product.servingGrams ?? 100) * servings
+        let item = MealItem(
+            name: product.displayName,
+            portionAmount: servings,
+            portionUnit: .piece,
+            gramsEstimate: totalGrams,
+            usdaFdcId: nil,
+            usdaDescription: product.displayName,
+            matchedSourceId: "openfoodfacts",
+            matchConfidence: 0.95,
+            nutrition: perServing.scaled(by: servings),
+            baselinePer100g: product.per100g,
+            itemConfidence: 0.95,
+            preparation: nil,
+            brandCue: product.brand
+        )
+        let meal = MealEntry(
+            mealName: product.displayName,
+            plateContext: .packaged,
+            referenceObjectPresent: false,
+            overallConfidence: 0.95,
+            items: [item],
+            modelTier: "barcode",
+            needsVerification: false
+        )
+        MealDiary.shared.save(meal)
+    }
+
     // Called when the user taps Save on the meal card. Persists the meal to the
     // user-visible diary, writes any slider edits to CorrectionLog (silent
     // model-training telemetry), and drops back to the Today screen.

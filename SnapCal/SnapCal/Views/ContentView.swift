@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var viewModel = TrackViewModel()
     @State private var showingCamera = false
+    @State private var showingBarcodeScanner = false
     @State private var selection: SCTab = .track
     @State private var fadeModel = TabBarFadeModel.shared
     private let lidarEnabled = DepthCapability.isLiDAREnabled
@@ -64,6 +65,7 @@ struct ContentView: View {
                 case .idle:
                     TodayView(
                         onTapCamera: { showingCamera = true },
+                        onTapBarcode: { showingBarcodeScanner = true },
                         lidarEnabled: lidarEnabled
                     )
                 case .analyzing:
@@ -136,6 +138,15 @@ struct ContentView: View {
                     showingCamera = false
                     viewModel.analyze(image: image)
                 }
+            }
+            .fullScreenCover(isPresented: $showingBarcodeScanner) {
+                BarcodeFlowView(
+                    onCommit: { product, servings in
+                        viewModel.commitBarcode(product: product, servings: servings)
+                        showingBarcodeScanner = false
+                    },
+                    onClose: { showingBarcodeScanner = false }
+                )
             }
         }
     }

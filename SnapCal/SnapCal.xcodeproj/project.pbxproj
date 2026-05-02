@@ -268,7 +268,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnapCal/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals and scan packaged-food barcodes.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -304,7 +304,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnapCal/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals and scan packaged-food barcodes.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

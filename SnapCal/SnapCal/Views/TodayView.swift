@@ -8,6 +8,7 @@ import Charts
 
 struct TodayView: View {
     let onTapCamera: () -> Void
+    let onTapBarcode: () -> Void
     let lidarEnabled: Bool
     private let diary = MealDiary.shared
     private let goalsStore = GoalsStore.shared
@@ -396,6 +397,20 @@ struct TodayView: View {
                     .font(SCTheme.Type_.title(32))
                     .foregroundStyle(.primary)
                 Spacer()
+                Button(action: onTapBarcode) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "barcode.viewfinder")
+                            .font(.system(size: 13, weight: .heavy))
+                        Text("Scan")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    }
+                    .foregroundStyle(SCTheme.Colors.accentPink)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(SCTheme.Colors.accentPink.opacity(0.14), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Scan barcode")
             }
         }
         .padding(.top, 8)
