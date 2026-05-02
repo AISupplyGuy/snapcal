@@ -67,3 +67,7 @@ week0-accuracy-test/results/
 # Waitlist local builds
 waitlist/.next/
 waitlist/node_modules/
+
+# Codex review output — large, regenerable
+codex-reviews/
+SnapCal/codex-reviews/
