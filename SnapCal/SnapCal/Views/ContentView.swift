@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var showingBarcodeScanner = false
     @State private var selection: SCTab = .track
     @State private var fadeModel = TabBarFadeModel.shared
+    @State private var notificationRouter = NotificationRouter.shared
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
@@ -47,6 +48,9 @@ struct ContentView: View {
         .preferredColorScheme(resolvedScheme)
         .onChange(of: selection) { _, _ in
             TabBarFadeModel.shared.reset()
+        }
+        .onChange(of: notificationRouter.pantryRequestVersion) { _, _ in
+            selection = .pantry
         }
     }
 

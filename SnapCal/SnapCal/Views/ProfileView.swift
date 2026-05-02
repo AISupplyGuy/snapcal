@@ -15,6 +15,9 @@ struct ProfileView: View {
     @State private var mealReminders = UserDefaults.standard.object(forKey: ProfilePrefsKeys.mealReminders) as? Bool ?? true
     @State private var mealCount = MealDiary.shared.allTimeMealCount
     @State private var streak = MealDiary.shared.dayStreak
+    @State private var subs = Subscriptions.shared
+    @State private var groceryAlerts = NotificationPrefs.shared.isGroceryAlertsEnabled
+    @State private var showingPaywall = false
 
     private let profileStore = UserProfileStore.shared
     private let goalsStore = GoalsStore.shared
@@ -30,6 +33,9 @@ struct ProfileView: View {
 
                     sectionTitle("Goals & health")
                     goalsGroup
+
+                    sectionTitle("Notifications")
+                    notificationsGroup
 
                     sectionTitle("App")
                     appGroup
@@ -72,6 +78,17 @@ struct ProfileView: View {
                     copy: "SnapCal will sync meals, macros, and weight to Apple Health so your rings, moves, and calories land in one place."
                 )
                 .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallSheet(
+                    trigger: "Unlock scan alerts",
+                    valueProps: [
+                        "Get a nudge the moment you walk into a grocery store",
+                        "Pantry stays in sync — never re-scan something twice",
+                        "Unlocks every Pro feature as we ship them"
+                    ]
+                )
+                .presentationDetents([.large])
             }
             .onAppear {
                 // Stats can change after saving/deleting meals — refresh each
@@ -213,6 +230,69 @@ struct ProfileView: View {
                     }
                 ), tint: SCTheme.Colors.carbGreen)
             )
+        }
+    }
+
+    private var notificationsGroup: some View {
+        SettingsGroup {
+            if subs.isPro {
+                SettingsRow(
+                    icon: .init(system: "cart.fill", gradient: [SCTheme.Colors.accentPink, SCTheme.Colors.accentOrange]),
+                    label: "Grocery scan alerts",
+                    trailing: .toggle(Binding(
+                        get: { groceryAlerts },
+                        set: { v in
+                            // Optimistic update so the toggle animates;
+                            // toggleGroceryAlerts will revert if the user
+                            // denies notification permission.
+                            groceryAlerts = v
+                            Task { await toggleGroceryAlerts(v) }
+                        }
+                    ), tint: SCTheme.Colors.accentPink)
+                )
+            } else {
+                Button {
+                    showingPaywall = true
+                } label: {
+                    GroceryAlertsLockedRow()
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @MainActor
+    private func toggleGroceryAlerts(_ enabled: Bool) async {
+        if enabled {
+            let notificationsOK = await GroceryNotifications.requestAuthorization()
+            guard notificationsOK else {
+                groceryAlerts = false
+                return
+            }
+            NotificationPrefs.shared.setGroceryAlertsEnabled(true)
+            groceryAlerts = true
+
+            let monitor = GroceryArrivalMonitor.shared
+            switch monitor.authorizationStatus {
+            case .notDetermined:
+                monitor.requestWhenInUse()
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    if monitor.authorizationStatus == .authorizedWhenInUse {
+                        monitor.requestAlways()
+                    }
+                }
+            case .authorizedWhenInUse:
+                monitor.requestAlways()
+            case .authorizedAlways:
+                monitor.startIfEnabled()
+            default:
+                break
+            }
+        } else {
+            NotificationPrefs.shared.setGroceryAlertsEnabled(false)
+            GroceryArrivalMonitor.shared.stop()
+            groceryAlerts = false
         }
     }
 
@@ -510,6 +590,53 @@ private struct ComingSoonSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Locked grocery alerts row (free tier)
+
+private struct GroceryAlertsLockedRow: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(LinearGradient(
+                        colors: [SCTheme.Colors.accentPink, SCTheme.Colors.accentOrange],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                Image(systemName: "cart.fill")
+                    .font(.system(size: 13, weight: .heavy))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 30, height: 30)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Grocery scan alerts")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+                Text("Get pinged the moment you walk into a store")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 4) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 9, weight: .heavy))
+                Text("PRO")
+                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .tracking(1.0)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4)
+            .background(SCTheme.Gradients.cta, in: Capsule())
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .contentShape(Rectangle())
     }
 }
 

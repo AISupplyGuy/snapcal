@@ -269,6 +269,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnapCal/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals and scan packaged-food barcodes.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "SnapCal uses background location to remind you to scan your receipt when you arrive at a grocery store. You can turn this off any time in Profile.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SnapCal uses your location to detect when you arrive at a grocery store so it can remind you to scan your receipt.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -305,6 +307,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SnapCal/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "SnapCal uses your camera to identify meals and scan packaged-food barcodes.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "SnapCal uses background location to remind you to scan your receipt when you arrive at a grocery store. You can turn this off any time in Profile.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "SnapCal uses your location to detect when you arrive at a grocery store so it can remind you to scan your receipt.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "SnapCal can analyze photos from your library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
