@@ -42,6 +42,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let destination = response.notification.request.content.userInfo["destination"] as? String
         await MainActor.run {
             switch destination {
+            case "scan-receipt":
+                NotificationRouter.shared.requestScanReceipt()
             case "pantry":
                 NotificationRouter.shared.requestPantry()
             default:

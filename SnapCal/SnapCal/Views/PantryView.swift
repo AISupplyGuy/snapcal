@@ -6,7 +6,13 @@ import SwiftUI
 struct PantryView: View {
     @State private var store = PantryStore.shared
     @State private var showingAdd = false
+    @State private var showingReceiptScan = false
     @State private var editing: PantryItem?
+    @State private var notificationRouter = NotificationRouter.shared
+    // Synced from notificationRouter.scanReceiptRequestVersion on first
+    // appear; reading the @MainActor property in a State default
+    // expression would be an isolation error.
+    @State private var lastSeenScanRequest = 0
 
     var body: some View {
         NavigationStack {
@@ -34,14 +40,25 @@ struct PantryView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingAdd = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(SCTheme.Colors.accentPink)
+                    HStack(spacing: 14) {
+                        Button {
+                            showingReceiptScan = true
+                        } label: {
+                            Image(systemName: "doc.text.viewfinder")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(SCTheme.Colors.accentPink)
+                        }
+                        .accessibilityLabel("Scan receipt")
+
+                        Button {
+                            showingAdd = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(SCTheme.Colors.accentPink)
+                        }
+                        .accessibilityLabel("Add pantry item")
                     }
-                    .accessibilityLabel("Add pantry item")
                 }
             }
             .sheet(isPresented: $showingAdd) {
@@ -49,6 +66,24 @@ struct PantryView: View {
             }
             .sheet(item: $editing) { item in
                 AddPantryItemSheet(editing: item)
+            }
+            .fullScreenCover(isPresented: $showingReceiptScan) {
+                ReceiptScanFlowView(onClose: { showingReceiptScan = false })
+            }
+            .onChange(of: notificationRouter.scanReceiptRequestVersion) { _, new in
+                guard new != lastSeenScanRequest else { return }
+                lastSeenScanRequest = new
+                showingReceiptScan = true
+            }
+            .onAppear {
+                // Catches the case where the user tapped the grocery
+                // notification while another tab was active — the version
+                // bump happened before this view existed so onChange
+                // didn't see it.
+                if notificationRouter.scanReceiptRequestVersion != lastSeenScanRequest {
+                    lastSeenScanRequest = notificationRouter.scanReceiptRequestVersion
+                    showingReceiptScan = true
+                }
             }
         }
     }
@@ -162,16 +197,6 @@ struct PantryView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
-            ComingSoonCard(
-                icon: "barcode.viewfinder",
-                title: "Barcode scanning",
-                copy: "Point at a package, the Open Food Facts lookup drops it in with macros already set."
-            )
-            ComingSoonCard(
-                icon: "doc.text.viewfinder",
-                title: "Receipt capture",
-                copy: "Snap a grocery receipt and we'll queue everything into Pantry in one pass."
-            )
             ComingSoonCard(
                 icon: "calendar.badge.clock",
                 title: "Expiration nudges",

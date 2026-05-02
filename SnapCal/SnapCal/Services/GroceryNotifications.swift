@@ -58,7 +58,7 @@ enum GroceryNotifications {
         content.body = "Don't forget to scan your receipt."
         content.sound = .default
         content.categoryIdentifier = categoryId
-        content.userInfo = ["destination": "pantry"]
+        content.userInfo = ["destination": "scan-receipt"]
 
         // Trigger nil = deliver right now.
         let request = UNNotificationRequest(
@@ -90,8 +90,17 @@ final class NotificationRouter {
     // payload) lets multiple observers each consume the event without
     // stepping on each other.
     private(set) var pantryRequestVersion = 0
+    private(set) var scanReceiptRequestVersion = 0
 
     func requestPantry() {
+        pantryRequestVersion &+= 1
+    }
+
+    func requestScanReceipt() {
+        // PantryView observes this to open the receipt scanner; bump
+        // pantryRequestVersion too so ContentView switches tabs in the
+        // same routing call.
+        scanReceiptRequestVersion &+= 1
         pantryRequestVersion &+= 1
     }
 }
