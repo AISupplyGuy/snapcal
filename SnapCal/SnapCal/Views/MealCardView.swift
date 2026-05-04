@@ -25,10 +25,29 @@ struct MealCardView: View {
                 }
                 totalsCard
                 itemsList
-                saveButton
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
+        }
+        // Pinned Save CTA. Inline at the end of the ScrollView, the button
+        // shared the tab-bar's pink/orange gradient and visually merged
+        // with it. Pinned + on a backdrop, it's always reachable and
+        // unmistakable above the floating bar.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            saveButton
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                .background(
+                    Rectangle()
+                        .fill(.background)
+                        .ignoresSafeArea(edges: .bottom)
+                )
+                .overlay(alignment: .top) {
+                    Rectangle()
+                        .fill(.primary.opacity(0.08))
+                        .frame(height: 0.5)
+                }
         }
         .task {
             if availableChains.isEmpty {

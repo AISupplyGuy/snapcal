@@ -23,8 +23,11 @@ final class GroceryArrivalMonitor: NSObject, CLLocationManagerDelegate {
     // Categories MapKit will surface for "this place sells groceries."
     private static let groceryCategories: Set<MKPointOfInterestCategory> = {
         var set: Set<MKPointOfInterestCategory> = [.foodMarket]
+        // Convenience-store POI category is iOS 18+. Build it via rawValue
+        // so this still compiles against the iOS 17 SDK; on older OSes
+        // MapKit just won't return matches for that raw value.
         if #available(iOS 18.0, *) {
-            set.insert(.convenienceStore)
+            set.insert(MKPointOfInterestCategory(rawValue: "MKPOICategoryConvenienceStore"))
         }
         return set
     }()

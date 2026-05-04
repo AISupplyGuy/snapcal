@@ -22,10 +22,16 @@ actor OpenFoodFactsService {
         if let hit = cache[barcode] { return hit }
 
         // Search endpoint returns *all* products that share the code (private
-        // labels, regional repacks). If it returns nothing, fall through to
-        // the canonical single-product endpoint as a last attempt.
-        let searched = try await search(code: barcode)
-        let resolved = searched.isEmpty ? try await singleProduct(code: barcode) : searched
+        // labels, regional repacks). It's also the heaviest endpoint and the
+        // first to 5xx under load — if it errors or returns nothing, fall
+        // through to the lighter single-product endpoint.
+        let resolved: [BarcodeProduct]
+        do {
+            let searched = try await search(code: barcode)
+            resolved = searched.isEmpty ? try await singleProduct(code: barcode) : searched
+        } catch {
+            resolved = try await singleProduct(code: barcode)
+        }
 
         cache[barcode] = resolved
         return resolved
@@ -54,12 +60,27 @@ actor OpenFoodFactsService {
 
     private func fetch<T: Decodable>(_ url: URL) async throws -> T {
         var request = URLRequest(url: url)
-        request.setValue("SnapCal-iOS/1.0", forHTTPHeaderField: "User-Agent")
-        let (data, response) = try await session.data(for: request)
-        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            throw OpenFoodFactsError.http(http.statusCode)
+        // OFF's etiquette page asks for "AppName/Version (contact)" so they
+        // can reach out before throttling. Generic UAs get rate-limited first.
+        request.setValue("SnapCal-iOS/1.0 (https://snapcal.app)", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 12
+
+        // One retry on 5xx — OFF's public API is occasionally overloaded
+        // and a single short backoff fixes most transient 503s.
+        for attempt in 0..<2 {
+            let (data, response) = try await session.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                if (500...599).contains(http.statusCode), attempt == 0 {
+                    try await Task.sleep(nanoseconds: 600_000_000)
+                    continue
+                }
+                if !(200...299).contains(http.statusCode) {
+                    throw OpenFoodFactsError.http(http.statusCode)
+                }
+            }
+            return try decoder.decode(T.self, from: data)
         }
-        return try decoder.decode(T.self, from: data)
+        throw OpenFoodFactsError.http(503)
     }
 
     private static let fields = "code,product_name,generic_name,brands,image_front_url,image_url,serving_size,serving_quantity,nutriments"

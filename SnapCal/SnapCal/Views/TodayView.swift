@@ -398,16 +398,17 @@ struct TodayView: View {
                     .foregroundStyle(.primary)
                 Spacer()
                 Button(action: onTapBarcode) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 7) {
                         Image(systemName: "barcode.viewfinder")
-                            .font(.system(size: 13, weight: .heavy))
-                        Text("Scan")
-                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                            .font(.system(size: 15, weight: .heavy))
+                        Text("Scan barcode")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
                     }
-                    .foregroundStyle(SCTheme.Colors.accentPink)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(SCTheme.Colors.accentPink.opacity(0.14), in: Capsule())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(SCTheme.Gradients.cta, in: Capsule())
+                    .shadow(color: SCTheme.Colors.accentPink.opacity(0.35), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Scan barcode")

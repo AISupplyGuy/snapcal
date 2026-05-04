@@ -13,6 +13,10 @@ struct PantryView: View {
     // appear; reading the @MainActor property in a State default
     // expression would be an isolation error.
     @State private var lastSeenScanRequest = 0
+    // Bulk-select mode: tap rows to toggle, then "Delete N" floats up
+    // from the bottom. Tapping while NOT selecting opens the edit sheet.
+    @State private var selecting = false
+    @State private var selected: Set<UUID> = []
 
     var body: some View {
         NavigationStack {
@@ -41,25 +45,33 @@ struct PantryView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 14) {
-                        Button {
-                            showingReceiptScan = true
-                        } label: {
-                            Image(systemName: "doc.text.viewfinder")
-                                .fontWeight(.semibold)
-                                .foregroundStyle(SCTheme.Colors.accentPink)
+                        if !store.items.isEmpty {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selecting.toggle()
+                                    if !selecting { selected.removeAll() }
+                                }
+                            } label: {
+                                Text(selecting ? "Done" : "Select")
+                                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(SCTheme.Colors.accentPink)
+                            }
                         }
-                        .accessibilityLabel("Scan receipt")
-
-                        Button {
-                            showingAdd = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .fontWeight(.semibold)
-                                .foregroundStyle(SCTheme.Colors.accentPink)
+                        if !selecting {
+                            Button {
+                                showingAdd = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(SCTheme.Colors.accentPink)
+                            }
+                            .accessibilityLabel("Add pantry item")
                         }
-                        .accessibilityLabel("Add pantry item")
                     }
                 }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if selecting { selectionBar }
             }
             .sheet(isPresented: $showingAdd) {
                 AddPantryItemSheet()
@@ -93,10 +105,30 @@ struct PantryView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
             SCKickerPill(text: "Pantry", tint: SCTheme.Colors.carbGreen)
-            Text("What's on hand")
-                .font(SCTheme.Type_.title(30))
-                .foregroundStyle(.primary)
-            Text("\(store.items.count) item\(store.items.count == 1 ? "" : "s") stocked. Tap + to add, tap a row to edit, hold to delete.")
+            HStack(alignment: .firstTextBaseline) {
+                Text("What's on hand")
+                    .font(SCTheme.Type_.title(30))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Button {
+                    showingReceiptScan = true
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "doc.text.viewfinder")
+                            .font(.system(size: 15, weight: .heavy))
+                        Text("Scan receipt")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(SCTheme.Gradients.cta, in: Capsule())
+                    .shadow(color: SCTheme.Colors.accentPink.opacity(0.35), radius: 8, x: 0, y: 4)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Scan receipt")
+            }
+            Text("\(store.items.count) item\(store.items.count == 1 ? "" : "s") stocked. Scan a receipt to add many at once, or tap + for manual.")
                 .font(SCTheme.Type_.body())
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -165,9 +197,30 @@ struct PantryView: View {
             VStack(spacing: 8) {
                 ForEach(items) { item in
                     Button {
-                        editing = item
+                        if selecting {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            if selected.contains(item.id) {
+                                selected.remove(item.id)
+                            } else {
+                                selected.insert(item.id)
+                            }
+                        } else {
+                            editing = item
+                        }
                     } label: {
-                        PantryRow(item: item)
+                        HStack(spacing: 12) {
+                            if selecting {
+                                Image(systemName: selected.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 22, weight: .heavy))
+                                    .foregroundStyle(
+                                        selected.contains(item.id)
+                                            ? SCTheme.Colors.accentPink
+                                            : .secondary.opacity(0.5)
+                                    )
+                                    .transition(.scale.combined(with: .opacity))
+                            }
+                            PantryRow(item: item)
+                        }
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
@@ -185,6 +238,56 @@ struct PantryView: View {
                 }
             }
         }
+    }
+
+    // MARK: Selection bar
+
+    private var selectionBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                if selected.count == store.items.count {
+                    selected.removeAll()
+                } else {
+                    selected = Set(store.items.map(\.id))
+                }
+            } label: {
+                Text(selected.count == store.items.count && !store.items.isEmpty ? "Clear" : "Select all")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                    .foregroundStyle(SCTheme.Colors.accentPink)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(SCTheme.Colors.accentPink.opacity(0.12), in: Capsule())
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 0)
+
+            Button {
+                guard !selected.isEmpty else { return }
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                let toDelete = store.items.filter { selected.contains($0.id) }
+                for item in toDelete { store.delete(item) }
+                selected.removeAll()
+                withAnimation(.easeInOut(duration: 0.2)) { selecting = false }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash.fill")
+                    Text(selected.isEmpty ? "Delete" : "Delete \(selected.count)")
+                }
+                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .background(SCTheme.Gradients.cta, in: Capsule())
+                .opacity(selected.isEmpty ? 0.45 : 1)
+            }
+            .buttonStyle(.plain)
+            .disabled(selected.isEmpty)
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
+        .background(.ultraThinMaterial)
     }
 
     // MARK: Coming soon

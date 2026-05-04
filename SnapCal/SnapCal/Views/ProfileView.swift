@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 // Profile tab — mirrors the "SnapCal Profile Tab" design spec.
 // Hero (avatar + name + email + plan pill) → 3 stats → Goals/Health
