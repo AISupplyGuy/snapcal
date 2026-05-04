@@ -18,7 +18,7 @@ enum ReceiptItemClassifier {
         var include: Bool
     }
 
-    // Lines we drop without further analysis. Receipts are full of these.
+    // Substrings — line is dropped if it contains any of these.
     private static let rejectKeywords: Set<String> = [
         "subtotal", "total", "tax", "change", "cash", "credit", "debit",
         "visa", "mastercard", "amex", "tender", "balance", "approved",
@@ -26,6 +26,16 @@ enum ReceiptItemClassifier {
         "transaction", "receipt", "store", "register", "cashier", "ref ",
         "ref#", "auth ", "auth#", "phone", "address", "manager",
         "return policy", "exchange", "tip"
+    ]
+
+    // Whole-line matches — short receipt boilerplate that would also appear
+    // as substrings inside real food names if we used contains() (e.g.
+    // "wed" inside "wedge"), so match after trimming punctuation.
+    private static let exactRejectWords: Set<String> = [
+        "date", "time", "qty", "item", "items", "sku", "special",
+        "mon", "tue", "tues", "wed", "thu", "thur", "thurs", "fri", "sat", "sun",
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "net", "ea", "each", "kg", "lb", "oz", "g", "ml"
     ]
 
     static func classify(lines: [String], now: Date = .now) -> [Candidate] {
@@ -43,6 +53,17 @@ enum ReceiptItemClassifier {
         guard !trimmed.isEmpty else { return nil }
         for stop in rejectKeywords where lower.contains(stop) { return nil }
 
+        // Per-unit / weight detail rows — the line under each item that
+        // says "0.778kg Net @ $5.99/kg". Reject if the line starts with a
+        // number followed by a unit, or contains the @ + price-per-unit
+        // pattern that only ever appears on detail rows.
+        if lower.range(of: #"^\s*\d+(\.\d+)?\s*(kg|g|lb|oz|ml|l)\b"#, options: .regularExpression) != nil {
+            return nil
+        }
+        if lower.contains("@") && lower.range(of: #"\$?\d+\.\d{2}\s*/\s*(kg|g|lb|oz)"#, options: .regularExpression) != nil {
+            return nil
+        }
+
         // Strip trailing prices and tax flags ("2.99", "2.99 F", "$2.99 N").
         // The pattern: optional $, digits, optional .digits, optional space + single letter.
         var name = trimmed
@@ -59,11 +80,24 @@ enum ReceiptItemClassifier {
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
+        // Whole-line boilerplate match (DATE, WED, SPECIAL, etc.). Done after
+        // price-stripping so "SPECIAL $0.99" → "SPECIAL" → rejected.
+        let bareLower = name
+            .lowercased()
+            .trimmingCharacters(in: CharacterSet(charactersIn: ".,:;*-_ "))
+        if exactRejectWords.contains(bareLower) { return nil }
+
         // Need at least one alphabetic word ≥ 3 chars to be food, not noise.
         let alphaTokens = name
             .split(whereSeparator: { !$0.isLetter })
             .filter { $0.count >= 3 }
         guard !alphaTokens.isEmpty else { return nil }
+
+        // Drop lines that are mostly digits/punctuation — real product
+        // names are predominantly letters even when they include weights
+        // or pack counts.
+        let letterCount = name.filter { $0.isLetter }.count
+        guard Double(letterCount) / Double(max(name.count, 1)) >= 0.5 else { return nil }
 
         let pretty = prettify(name)
         let category = categoryFor(pretty.lowercased())

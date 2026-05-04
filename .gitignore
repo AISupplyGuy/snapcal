@@ -71,3 +71,6 @@ waitlist/node_modules/
 # Codex review output — large, regenerable
 codex-reviews/
 SnapCal/codex-reviews/
+
+# Local secrets — Veryfi keys, etc. Never commit.
+SnapCal/SnapCal/Services/VeryfiConfig.swift

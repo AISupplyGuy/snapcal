@@ -40,7 +40,7 @@ struct ReceiptScanFlowView: View {
                 MessageView(
                     icon: "doc.text.magnifyingglass",
                     title: "Couldn't read any items",
-                    body: "Try moving to a better light or framing just the items list.",
+                    message: "Try moving to a better light or framing just the items list.",
                     primary: ("Try again", { phase = .scanning }),
                     secondary: ("Close", onClose)
                 )
@@ -48,7 +48,7 @@ struct ReceiptScanFlowView: View {
                 MessageView(
                     icon: "exclamationmark.triangle.fill",
                     title: "Scanner trouble",
-                    body: message,
+                    message: message,
                     primary: ("Try again", { phase = .scanning }),
                     secondary: ("Close", onClose)
                 )
@@ -60,8 +60,7 @@ struct ReceiptScanFlowView: View {
         phase = .processing
         Task {
             do {
-                let lines = try await ReceiptOCRService.recognizeLines(in: images)
-                let candidates = ReceiptItemClassifier.classify(lines: lines)
+                let candidates = try await parseCandidates(from: images)
                 await MainActor.run {
                     phase = candidates.isEmpty ? .empty : .confirming(candidates)
                 }
@@ -70,6 +69,30 @@ struct ReceiptScanFlowView: View {
                     phase = .failed(error.localizedDescription)
                 }
             }
+        }
+    }
+
+    // Pipeline:
+    //   1. Veryfi (if configured) → clean line items with totals
+    //      OR on-device OCR + heuristic classifier as fallback
+    //   2. Gemini normalization pass → expand store-brand abbreviations,
+    //      assign categories, drop non-food lines (paper towels, gift
+    //      cards, etc.). Skipped if Gemini key is missing or the call
+    //      fails — partial-quality data is still better than nothing.
+    private func parseCandidates(from images: [UIImage]) async throws -> [ReceiptItemClassifier.Candidate] {
+        let parsed: [ReceiptItemClassifier.Candidate]
+        if VeryfiConfig.isConfigured, let first = images.first {
+            parsed = try await VeryfiReceiptService.parseReceipt(image: first)
+        } else {
+            let lines = try await ReceiptOCRService.recognizeLines(in: images)
+            parsed = ReceiptItemClassifier.classify(lines: lines)
+        }
+
+        do {
+            return try await GeminiReceiptNormalizer.normalize(candidates: parsed)
+        } catch {
+            print("[Receipt] Gemini normalization skipped: \(error.localizedDescription)")
+            return parsed
         }
     }
 
@@ -97,12 +120,19 @@ private struct ProcessingView: View {
             Text("Reading your receipt…")
                 .font(.system(size: 15, weight: .heavy, design: .rounded))
                 .foregroundStyle(.primary)
-            Text("On-device OCR — nothing leaves your phone.")
+            Text(subline)
                 .font(SCTheme.Type_.caption())
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.background)
+    }
+
+    private var subline: String {
+        if VeryfiConfig.isConfigured {
+            return "Parsing line items — this can take a few seconds."
+        }
+        return "On-device OCR — nothing leaves your phone."
     }
 }
 
@@ -111,7 +141,7 @@ private struct ProcessingView: View {
 private struct MessageView: View {
     let icon: String
     let title: String
-    let body: String
+    let message: String
     let primary: (String, () -> Void)
     let secondary: (String, () -> Void)?
 
@@ -123,7 +153,7 @@ private struct MessageView: View {
             Text(title)
                 .font(.system(size: 22, weight: .heavy, design: .rounded))
                 .foregroundStyle(.primary)
-            Text(body)
+            Text(message)
                 .font(SCTheme.Type_.body())
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
