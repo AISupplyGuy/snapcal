@@ -46,7 +46,7 @@ struct ProfileView: View {
                 .padding(.bottom, 32)
             }
             .scrollIndicators(.hidden)
-            .tabBarFadesOnScroll()
+            .tabBarFadesOnScroll(scale: 2.0)
             .navigationTitle("")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
