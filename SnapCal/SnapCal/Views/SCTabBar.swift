@@ -52,25 +52,31 @@ struct SCTabBar: View {
         .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
         .padding(.horizontal, 14)
         .overlay(alignment: .top) {
-            // Floating camera FAB — always opens the camera, no tab switch.
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onCameraTap()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(SCTheme.Gradients.cta)
-                        .frame(width: 60, height: 60)
-                        .shadow(color: SCTheme.Colors.accentPink.opacity(0.45), radius: 14, y: 6)
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 22, weight: .heavy))
-                        .foregroundStyle(.white)
+            // Floating camera FAB lives only on Track — that's where the
+            // capture/analyze flow is rooted. On other tabs it'd just be
+            // a confusing teleport into Track mid-task.
+            if selection == .track {
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onCameraTap()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(SCTheme.Gradients.cta)
+                            .frame(width: 60, height: 60)
+                            .shadow(color: SCTheme.Colors.accentPink.opacity(0.45), radius: 14, y: 6)
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 22, weight: .heavy))
+                            .foregroundStyle(.white)
+                    }
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Snap a meal")
+                .offset(y: -68)
+                .transition(.scale.combined(with: .opacity))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Snap a meal")
-            .offset(y: -68)
         }
+        .animation(.easeInOut(duration: 0.18), value: selection)
         .fixedSize(horizontal: false, vertical: true)
     }
 
