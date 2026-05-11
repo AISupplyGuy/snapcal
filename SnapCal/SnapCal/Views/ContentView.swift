@@ -138,10 +138,16 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingCamera) {
-                CaptureGuideView(lidarEnabled: lidarEnabled) { image in
-                    showingCamera = false
-                    viewModel.analyze(image: image)
-                }
+                CaptureGuideView(
+                    lidarEnabled: lidarEnabled,
+                    onPicked: { image in
+                        showingCamera = false
+                        viewModel.analyze(image: image)
+                    },
+                    onCancel: {
+                        showingCamera = false
+                    }
+                )
             }
             .fullScreenCover(isPresented: $showingBarcodeScanner) {
                 BarcodeFlowView(
@@ -235,10 +241,11 @@ private struct AnalyzingView: View {
 private struct CaptureGuideView: View {
     let lidarEnabled: Bool
     let onPicked: (UIImage) -> Void
+    let onCancel: () -> Void
 
     var body: some View {
         ZStack {
-            CameraView(onPicked: onPicked)
+            CameraView(onPicked: onPicked, onCancel: onCancel)
                 .ignoresSafeArea()
 
             VStack {

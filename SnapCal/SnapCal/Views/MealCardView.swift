@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MealCardView: View {
-    @State var meal: MealEntry
+    private let sourceMeal: MealEntry
     let photo: UIImage?
     let onCommit: (MealEntry) -> Void
     let onDietaryVariantChange: (MealItem, DietaryVariantPreference, PlateContext) async -> NutritionMatch?
@@ -10,9 +10,31 @@ struct MealCardView: View {
     let onChainReapply: (MealItem, String, PlateContext) async -> NutritionMatch?
     let pristineItemsProvider: () -> [MealItem]?
 
+    @State private var meal: MealEntry
     @State private var availableChains: [Chain] = []
     @State private var activeChain: Chain?
     @State private var isChainApplying = false
+
+    init(
+        meal: MealEntry,
+        photo: UIImage?,
+        onCommit: @escaping (MealEntry) -> Void,
+        onDietaryVariantChange: @escaping (MealItem, DietaryVariantPreference, PlateContext) async -> NutritionMatch?,
+        onSizeVariantChange: @escaping (MealItem, String, PlateContext) async -> NutritionMatch?,
+        onLoadChains: @escaping () async -> [Chain],
+        onChainReapply: @escaping (MealItem, String, PlateContext) async -> NutritionMatch?,
+        pristineItemsProvider: @escaping () -> [MealItem]?
+    ) {
+        self.sourceMeal = meal
+        self.photo = photo
+        self.onCommit = onCommit
+        self.onDietaryVariantChange = onDietaryVariantChange
+        self.onSizeVariantChange = onSizeVariantChange
+        self.onLoadChains = onLoadChains
+        self.onChainReapply = onChainReapply
+        self.pristineItemsProvider = pristineItemsProvider
+        _meal = State(initialValue: meal)
+    }
 
     var body: some View {
         ScrollView {
@@ -53,6 +75,10 @@ struct MealCardView: View {
             if availableChains.isEmpty {
                 availableChains = await onLoadChains()
             }
+            activeChain = inferInitialChain()
+        }
+        .onChange(of: sourceMeal.id, initial: true) { _, _ in
+            meal = sourceMeal
             activeChain = inferInitialChain()
         }
     }
