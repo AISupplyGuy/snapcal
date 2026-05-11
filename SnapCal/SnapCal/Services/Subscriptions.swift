@@ -19,8 +19,32 @@ import RevenueCat
 final class Subscriptions {
     static let shared = Subscriptions()
 
-    private(set) var isPro: Bool = false
+    // Backing storage from RevenueCat. The public `isPro` accessor below
+    // ORs this with the debug override so a developer-toggled override
+    // wins regardless of what RevenueCat reports.
+    private(set) var isProFromStore: Bool = false
     private(set) var isReady: Bool = false
+
+    #if DEBUG
+    // Persisted override so a flip survives relaunches during dev/demo.
+    // Read/written by the Pro override row in Profile (DEBUG-only build).
+    var debugProOverride: Bool {
+        get { UserDefaults.standard.bool(forKey: "debug.proOverride") }
+        set { UserDefaults.standard.set(newValue, forKey: "debug.proOverride") }
+    }
+    #endif
+
+    var isPro: Bool {
+        #if DEBUG
+        if debugProOverride { return true }
+        #endif
+        return isProFromStore
+    }
+
+    // Last value of appUserID seen — exposes the RevenueCat-generated
+    // anonymous ID (`$RCAnonymousID:…`) so a debug surface can show it
+    // and you can paste it into the dashboard to grant entitlements.
+    private(set) var currentAppUserID: String?
 
     #if canImport(RevenueCat)
     private(set) var currentOffering: Offering?
@@ -53,9 +77,13 @@ final class Subscriptions {
         #if canImport(RevenueCat)
         do {
             let info = try await Purchases.shared.customerInfo()
-            self.isPro = info.entitlements[SubscriptionsConfig.entitlementId]?.isActive ?? false
+            self.isProFromStore = info.entitlements[SubscriptionsConfig.entitlementId]?.isActive ?? false
             self.currentOffering = try? await Purchases.shared.offerings().current
+            self.currentAppUserID = Purchases.shared.appUserID
             self.isReady = true
+            #if DEBUG
+            print("[Subscriptions] appUserID = \(Purchases.shared.appUserID)")
+            #endif
         } catch {
             #if DEBUG
             print("[Subscriptions] refresh failed: \(error.localizedDescription)")
@@ -70,7 +98,7 @@ final class Subscriptions {
         #if canImport(RevenueCat)
         do {
             let info = try await Purchases.shared.restorePurchases()
-            self.isPro = info.entitlements[SubscriptionsConfig.entitlementId]?.isActive ?? false
+            self.isProFromStore = info.entitlements[SubscriptionsConfig.entitlementId]?.isActive ?? false
         } catch {
             #if DEBUG
             print("[Subscriptions] restore failed: \(error.localizedDescription)")
@@ -84,7 +112,7 @@ final class Subscriptions {
         do {
             let result = try await Purchases.shared.purchase(package: package)
             let active = result.customerInfo.entitlements[SubscriptionsConfig.entitlementId]?.isActive ?? false
-            self.isPro = active
+            self.isProFromStore = active
             if result.userCancelled { return .cancelled }
             return active ? .purchased : .pending
         } catch {

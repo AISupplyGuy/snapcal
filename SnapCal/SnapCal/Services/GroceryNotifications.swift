@@ -91,16 +91,26 @@ final class NotificationRouter {
     // stepping on each other.
     private(set) var pantryRequestVersion = 0
     private(set) var scanReceiptRequestVersion = 0
+    private(set) var cookRequestVersion = 0
+
+    // Names of pantry items the most recent "Cook with this" tap selected
+    // — Cook reads this to seed its first generation's "use these"
+    // ingredients. Empty array means "general suggestion."
+    private(set) var cookSeedIngredients: [String] = []
 
     func requestPantry() {
         pantryRequestVersion &+= 1
     }
 
     func requestScanReceipt() {
-        // PantryView observes this to open the receipt scanner; bump
-        // pantryRequestVersion too so ContentView switches tabs in the
-        // same routing call.
         scanReceiptRequestVersion &+= 1
         pantryRequestVersion &+= 1
+    }
+
+    // Switches to Cook and tells it which pantry items to feature in the
+    // next generation. Empty list = open Cook with no constraints.
+    func requestCookWithExpiring(_ ingredients: [String]) {
+        cookSeedIngredients = ingredients
+        cookRequestVersion &+= 1
     }
 }

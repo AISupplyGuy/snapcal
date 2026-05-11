@@ -1,6 +1,6 @@
 import Foundation
 
-struct NutritionFacts: Codable, Sendable, Equatable {
+struct NutritionFacts: Codable, Sendable, Equatable, Hashable {
     var calories: Double
     var proteinGrams: Double
     var carbGrams: Double

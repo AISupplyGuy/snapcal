@@ -21,7 +21,8 @@ struct InsightsView: View {
                     macrosCard
                     streaksRow
                     mostLoggedCard
-                    weightPlaceholderCard
+                    WeightInsightsSection()
+                        .padding(.top, 6)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 8)
@@ -328,37 +329,6 @@ struct InsightsView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .scCardStyle()
-    }
-
-    private var weightPlaceholderCard: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "scalemass.fill")
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundStyle(SCTheme.Colors.proteinBlue)
-                .frame(width: 38, height: 38)
-                .background(SCTheme.Colors.proteinBlue.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text("Weight trend")
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.primary)
-                    Text("SOON")
-                        .font(.system(size: 9, weight: .heavy, design: .rounded))
-                        .tracking(1.0)
-                        .foregroundStyle(SCTheme.Colors.accentPink)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(SCTheme.Colors.accentPink.opacity(0.12), in: Capsule())
-                }
-                Text("Connect Apple Health in Profile to overlay weight on top of daily calories.")
-                    .font(SCTheme.Type_.caption())
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(16)
         .scCardStyle()
     }
 

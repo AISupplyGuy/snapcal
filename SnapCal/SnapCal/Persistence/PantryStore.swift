@@ -43,6 +43,7 @@ final class PantryStore {
     func add(_ item: PantryItem) {
         items = sorted(items + [item])
         rewrite()
+        ExpirationNotificationScheduler.shared.scheduleAll(for: items)
     }
 
     func update(_ updated: PantryItem) {
@@ -56,11 +57,28 @@ final class PantryStore {
         }
         items = sorted(next)
         rewrite()
+        ExpirationNotificationScheduler.shared.scheduleAll(for: items)
     }
 
     func delete(_ item: PantryItem) {
         items.removeAll { $0.id == item.id }
         rewrite()
+        ExpirationNotificationScheduler.shared.scheduleAll(for: items)
+    }
+
+    // Items expiring within `days` (or already expired). Sorted soonest
+    // first so the "Use soon" rail at the top of Pantry surfaces the
+    // most urgent thing first.
+    func expiringSoon(within days: Int = 5) -> [PantryItem] {
+        items
+            .filter { item in
+                guard let exp = item.expirationDate else { return false }
+                let daysOut = Calendar.current.dateComponents([.day], from: .now, to: exp).day ?? 0
+                return daysOut <= days
+            }
+            .sorted { (a, b) in
+                (a.expirationDate ?? .distantFuture) < (b.expirationDate ?? .distantFuture)
+            }
     }
 
     // Items by category, oldest-added first within each category so the

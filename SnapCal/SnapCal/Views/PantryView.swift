@@ -27,13 +27,14 @@ struct PantryView: View {
                     if store.items.isEmpty {
                         emptyState
                     } else {
+                        let soon = store.expiringSoon()
+                        if !soon.isEmpty {
+                            useSoonRail(items: soon)
+                        }
                         ForEach(store.grouped(), id: \.category) { group in
                             section(for: group.category, items: group.items)
                         }
                     }
-
-                    comingSoonBlock
-                        .padding(.top, 8)
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 8)
@@ -290,21 +291,142 @@ struct PantryView: View {
         .background(.ultraThinMaterial)
     }
 
-    // MARK: Coming soon
+    // MARK: Use soon rail
 
-    private var comingSoonBlock: some View {
+    private func useSoonRail(items: [PantryItem]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("COMING SOON")
-                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                .tracking(1.1)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
+            HStack(spacing: 8) {
+                Image(systemName: "clock.badge.exclamationmark.fill")
+                    .font(.system(size: 12, weight: .heavy))
+                    .foregroundStyle(SCTheme.Colors.accentOrange)
+                Text("USE SOON")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .tracking(1.1)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button {
+                    notificationRouter.requestCookWithExpiring(items.map(\.name))
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Cook all")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 10, weight: .heavy))
+                    }
+                    .foregroundStyle(SCTheme.Colors.accentPink)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 4)
 
-            ComingSoonCard(
-                icon: "calendar.badge.clock",
-                title: "Expiration nudges",
-                copy: "Soft reminders before ingredients go off, so Cook suggests recipes using what's running out first."
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(items) { item in
+                        UseSoonChip(item: item) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            notificationRouter.requestCookWithExpiring([item.name])
+                        }
+                    }
+                }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 4)
+            }
+        }
+    }
+}
+
+private struct UseSoonChip: View {
+    let item: PantryItem
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: item.category.systemImage)
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundStyle(.white)
+                    statusBadge
+                }
+                Text(item.name)
+                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 4) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 9, weight: .heavy))
+                    Text("Cook with this")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                }
+                .foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(12)
+            .frame(width: 152, alignment: .leading)
+            .background(background, in: RoundedRectangle(cornerRadius: 16))
+            .shadow(color: shadowTint.opacity(0.32), radius: 10, y: 5)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var statusBadge: some View {
+        switch item.expirationStatus {
+        case .expired:
+            Text("EXPIRED")
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.white.opacity(0.22), in: Capsule())
+        case .soon(let days):
+            Text(days == 0 ? "TODAY" : "\(days)D LEFT")
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.white.opacity(0.22), in: Capsule())
+        case .ok(let days):
+            Text("\(days)D")
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                .tracking(1.0)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.white.opacity(0.22), in: Capsule())
+        case .none:
+            EmptyView()
+        }
+    }
+
+    private var background: LinearGradient {
+        switch item.expirationStatus {
+        case .expired:
+            return LinearGradient(
+                colors: [SCTheme.Colors.accentPink, Color(hex: 0xC42D52)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
             )
+        case .soon:
+            return LinearGradient(
+                colors: [SCTheme.Colors.accentOrange, SCTheme.Colors.accentPink],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        default:
+            return LinearGradient(
+                colors: [SCTheme.Colors.proteinBlue, Color(hex: 0x5856D6)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private var shadowTint: Color {
+        switch item.expirationStatus {
+        case .expired: return SCTheme.Colors.accentPink
+        case .soon:    return SCTheme.Colors.accentOrange
+        default:       return SCTheme.Colors.proteinBlue
         }
     }
 }

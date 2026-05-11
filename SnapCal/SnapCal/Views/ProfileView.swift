@@ -17,7 +17,9 @@ struct ProfileView: View {
     @State private var mealCount = MealDiary.shared.allTimeMealCount
     @State private var streak = MealDiary.shared.dayStreak
     @State private var subs = Subscriptions.shared
+    @State private var health = HealthKitService.shared
     @State private var groceryAlerts = NotificationPrefs.shared.isGroceryAlertsEnabled
+    @State private var expirationAlerts = NotificationPrefs.shared.isExpirationAlertsEnabled
     @State private var showingPaywall = false
 
     private let profileStore = UserProfileStore.shared
@@ -40,6 +42,11 @@ struct ProfileView: View {
 
                     sectionTitle("App")
                     appGroup
+
+                    #if DEBUG
+                    sectionTitle("Developer")
+                    debugGroup
+                    #endif
                 }
                 .padding(.horizontal, 22)
                 .padding(.top, 8)
@@ -74,11 +81,8 @@ struct ProfileView: View {
                     .presentationDetents([.medium])
             }
             .sheet(isPresented: $showingHealth) {
-                ComingSoonSheet(
-                    title: "Apple Health",
-                    copy: "SnapCal will sync meals, macros, and weight to Apple Health so your rings, moves, and calories land in one place."
-                )
-                .presentationDetents([.medium])
+                HealthConnectSheet()
+                    .presentationDetents([.large])
             }
             .sheet(isPresented: $showingPaywall) {
                 PaywallSheet(
@@ -215,7 +219,7 @@ struct ProfileView: View {
                 SettingsRow(
                     icon: .init(system: "heart.fill", gradient: [SCTheme.Colors.accentPink, Color(hex: 0xBF5AF2)]),
                     label: "Apple Health",
-                    trailing: .value("Not connected")
+                    trailing: .value(healthStatusLabel)
                 )
             }
             .buttonStyle(.plain)
@@ -236,6 +240,18 @@ struct ProfileView: View {
 
     private var notificationsGroup: some View {
         SettingsGroup {
+            SettingsRow(
+                icon: .init(system: "clock.badge.exclamationmark.fill", gradient: [SCTheme.Colors.accentOrange, SCTheme.Colors.accentPink]),
+                label: "Expiration nudges",
+                trailing: .toggle(Binding(
+                    get: { expirationAlerts },
+                    set: { v in
+                        expirationAlerts = v
+                        Task { await toggleExpirationAlerts(v) }
+                    }
+                ), tint: SCTheme.Colors.accentOrange)
+            )
+
             if subs.isPro {
                 SettingsRow(
                     icon: .init(system: "cart.fill", gradient: [SCTheme.Colors.accentPink, SCTheme.Colors.accentOrange]),
@@ -259,6 +275,22 @@ struct ProfileView: View {
                 }
                 .buttonStyle(.plain)
             }
+        }
+    }
+
+    @MainActor
+    private func toggleExpirationAlerts(_ enabled: Bool) async {
+        if enabled {
+            let ok = await ExpirationNotificationScheduler.shared.requestAuthorization()
+            guard ok else {
+                expirationAlerts = false
+                return
+            }
+            NotificationPrefs.shared.setExpirationAlertsEnabled(true)
+            ExpirationNotificationScheduler.shared.scheduleAll(for: PantryStore.shared.items)
+        } else {
+            NotificationPrefs.shared.setExpirationAlertsEnabled(false)
+            ExpirationNotificationScheduler.shared.scheduleAll(for: [])
         }
     }
 
@@ -332,9 +364,64 @@ struct ProfileView: View {
         }
     }
 
+    #if DEBUG
+    @State private var debugProOn = Subscriptions.shared.debugProOverride
+    @State private var debugIDCopied = false
+
+    private var debugGroup: some View {
+        SettingsGroup {
+            SettingsRow(
+                icon: .init(system: "wand.and.stars", gradient: [SCTheme.Colors.accentPink, SCTheme.Colors.accentOrange]),
+                label: "Force Pro (debug)",
+                trailing: .toggle(Binding(
+                    get: { debugProOn },
+                    set: { v in
+                        debugProOn = v
+                        Subscriptions.shared.debugProOverride = v
+                    }
+                ), tint: SCTheme.Colors.accentPink)
+            )
+
+            Button {
+                let id = subs.currentAppUserID ?? "(launch finished refreshing yet?)"
+                UIPasteboard.general.string = id
+                debugIDCopied = true
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 1_500_000_000)
+                    debugIDCopied = false
+                }
+            } label: {
+                SettingsRow(
+                    icon: .init(system: "person.crop.circle.fill.badge.checkmark", gradient: [SCTheme.Colors.proteinBlue, Color(hex: 0x5856D6)]),
+                    label: debugIDCopied ? "Copied!" : "RevenueCat user ID",
+                    trailing: .value(shortenedAppUserID)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var shortenedAppUserID: String {
+        guard let id = subs.currentAppUserID else { return "—" }
+        if id.count <= 18 { return id }
+        let head = id.prefix(8)
+        let tail = id.suffix(6)
+        return "\(head)…\(tail)"
+    }
+    #endif
+
     private var appearanceLabel: String {
         let raw = UserDefaults.standard.string(forKey: ProfilePrefsKeys.appearance) ?? "system"
         return AppearancePreference(rawValue: raw)?.label ?? "System"
+    }
+
+    private var healthStatusLabel: String {
+        switch health.authState {
+        case .granted:     return "Connected"
+        case .denied:      return "Denied"
+        case .unavailable: return "Unavailable"
+        case .unknown:     return "Not connected"
+        }
     }
 }
 

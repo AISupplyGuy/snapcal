@@ -66,6 +66,21 @@ final class MealDiary {
             next.sort { $0.capturedAt < $1.capturedAt }
             todaysMeals = next
         }
+        // Mirror to Apple Health if connected. Best-effort, no-op if the
+        // user hasn't granted nutrition write permission yet.
+        let totals = meal.totals
+        let mealId = meal.id
+        let capturedAt = meal.capturedAt
+        Task {
+            await HealthKitService.shared.writeMeal(
+                calories: totals.calories,
+                proteinGrams: totals.proteinGrams,
+                carbGrams: totals.carbGrams,
+                fatGrams: totals.fatGrams,
+                at: capturedAt,
+                mealId: mealId
+            )
+        }
     }
 
     var dailyTotals: NutritionFacts {

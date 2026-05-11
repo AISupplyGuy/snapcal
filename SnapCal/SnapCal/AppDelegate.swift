@@ -22,6 +22,18 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         Task { @MainActor in
             Subscriptions.shared.configure()
             GroceryArrivalMonitor.shared.startIfEnabled()
+            // Re-schedule pantry expiration notifications on every launch
+            // — covers items that became "due in 3 days" while the app
+            // was closed without us needing a BGTaskScheduler entry.
+            ExpirationNotificationScheduler.shared.scheduleAll(for: PantryStore.shared.items)
+            HealthKitService.shared.refreshAuthState()
+            // Best-effort one-shot import on cold launch — pulls weights
+            // logged elsewhere into the local cache so Insights renders
+            // the full history without waiting for the observer to fire.
+            if HealthKitService.shared.authState == .granted {
+                let imported = await HealthKitService.shared.recentWeights()
+                WeightLog.shared.ingestFromHealth(imported)
+            }
         }
         return true
     }

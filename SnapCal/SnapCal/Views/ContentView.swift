@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var selection: SCTab = .track
     @State private var fadeModel = TabBarFadeModel.shared
     @State private var notificationRouter = NotificationRouter.shared
+    @State private var paywallTrigger: PaywallTrigger?
     private let lidarEnabled = DepthCapability.isLiDAREnabled
 
     @AppStorage(ProfilePrefsKeys.appearance) private var appearance = "system"
@@ -32,11 +33,12 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 SCTabBar(selection: $selection, onCameraTap: {
-                    // Camera is always available — don't force a tab switch.
-                    // Ensures the capture sheet attaches to the existing
-                    // Track navigation stack that owns analyze/commit flow.
                     selection = .track
-                    showingCamera = true
+                    if UsageMeter.shared.canMealScan() {
+                        showingCamera = true
+                    } else {
+                        paywallTrigger = .mealScanLimit
+                    }
                 })
                 .padding(.bottom, 4)
             }
@@ -51,6 +53,13 @@ struct ContentView: View {
         }
         .onChange(of: notificationRouter.pantryRequestVersion) { _, _ in
             selection = .pantry
+        }
+        .onChange(of: notificationRouter.cookRequestVersion) { _, _ in
+            selection = .cook
+        }
+        .sheet(item: $paywallTrigger) { trigger in
+            PaywallSheet(trigger: trigger.eyebrow, valueProps: trigger.valueProps)
+                .presentationDetents([.large])
         }
     }
 
@@ -68,8 +77,20 @@ struct ContentView: View {
                 switch viewModel.state {
                 case .idle:
                     TodayView(
-                        onTapCamera: { showingCamera = true },
-                        onTapBarcode: { showingBarcodeScanner = true },
+                        onTapCamera: {
+                            if UsageMeter.shared.canMealScan() {
+                                showingCamera = true
+                            } else {
+                                paywallTrigger = .mealScanLimit
+                            }
+                        },
+                        onTapBarcode: {
+                            if UsageMeter.shared.canBarcodeScan() {
+                                showingBarcodeScanner = true
+                            } else {
+                                paywallTrigger = .barcodeScanLimit
+                            }
+                        },
                         lidarEnabled: lidarEnabled
                     )
                 case .analyzing:
@@ -142,6 +163,7 @@ struct ContentView: View {
                     lidarEnabled: lidarEnabled,
                     onPicked: { image in
                         showingCamera = false
+                        UsageMeter.shared.recordMealScan()
                         viewModel.analyze(image: image)
                     },
                     onCancel: {
@@ -152,6 +174,7 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $showingBarcodeScanner) {
                 BarcodeFlowView(
                     onCommit: { product, servings in
+                        UsageMeter.shared.recordBarcodeScan()
                         viewModel.commitBarcode(product: product, servings: servings)
                         showingBarcodeScanner = false
                     },
@@ -313,6 +336,58 @@ private struct FailureView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
+    }
+}
+
+// MARK: - Paywall trigger payload
+
+// Three-state enum so each surface that pops the paywall can pass
+// feature-specific copy into PaywallSheet. Conformance to Identifiable
+// lets us drive a `.sheet(item:)` directly off `paywallTrigger`.
+enum PaywallTrigger: String, Identifiable {
+    case mealScanLimit
+    case barcodeScanLimit
+    case groceryAlerts
+    case insightsProjection
+
+    var id: String { rawValue }
+
+    var eyebrow: String {
+        switch self {
+        case .mealScanLimit:      return "You're out of free scans"
+        case .barcodeScanLimit:   return "Scan more barcodes"
+        case .groceryAlerts:      return "Unlock scan alerts"
+        case .insightsProjection: return "Unlock projections"
+        }
+    }
+
+    var valueProps: [String] {
+        switch self {
+        case .mealScanLimit:
+            return [
+                "Unlimited photo scans every day",
+                "Unlimited barcode scans, too",
+                "Get every accuracy upgrade as we ship them"
+            ]
+        case .barcodeScanLimit:
+            return [
+                "Unlimited barcode scans — perfect for restocks",
+                "Unlimited photo scans every day",
+                "Apple Health sync, projections, grocery alerts"
+            ]
+        case .groceryAlerts:
+            return [
+                "Get a nudge the moment you walk into a grocery store",
+                "Pantry stays in sync — never re-scan something twice",
+                "Unlimited photo + barcode scans included"
+            ]
+        case .insightsProjection:
+            return [
+                "See where your weight lands in 4, 8, 12 weeks",
+                "Net-calorie correlation with Apple Health active energy",
+                "Unlimited photo + barcode scans included"
+            ]
+        }
     }
 }
 

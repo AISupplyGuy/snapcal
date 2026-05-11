@@ -16,6 +16,7 @@ final class NotificationPrefs: @unchecked Sendable {
     private let defaults = UserDefaults.standard
     private let toggleKey = "notif.groceryAlerts.enabled"
     private let throttleKey = "notif.groceryAlerts.lastFired"
+    private let expirationKey = "notif.expirationAlerts.enabled"
 
     // Don't fire two arrival notifications for the same store within this
     // window. 12h is long enough to cover a normal weekly-shop cadence
@@ -23,14 +24,29 @@ final class NotificationPrefs: @unchecked Sendable {
     private let cooldown: TimeInterval = 12 * 60 * 60
 
     private(set) var isGroceryAlertsEnabled: Bool
+    private(set) var isExpirationAlertsEnabled: Bool
 
     init() {
         self.isGroceryAlertsEnabled = defaults.bool(forKey: toggleKey)
+        // Default ON the first time we see this key — pantry expiration
+        // is a headline feature, not opt-in. Once explicitly written,
+        // honor that choice.
+        if defaults.object(forKey: expirationKey) == nil {
+            defaults.set(true, forKey: expirationKey)
+            self.isExpirationAlertsEnabled = true
+        } else {
+            self.isExpirationAlertsEnabled = defaults.bool(forKey: expirationKey)
+        }
     }
 
     func setGroceryAlertsEnabled(_ enabled: Bool) {
         isGroceryAlertsEnabled = enabled
         defaults.set(enabled, forKey: toggleKey)
+    }
+
+    func setExpirationAlertsEnabled(_ enabled: Bool) {
+        isExpirationAlertsEnabled = enabled
+        defaults.set(enabled, forKey: expirationKey)
     }
 
     // Returns true if we've never notified this store, or the cooldown

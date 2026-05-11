@@ -141,6 +141,39 @@ actor GeminiService {
         throw GeminiError.httpError(status: lastStatus, body: lastBody)
     }
 
+    // Text-only generation used by the Cook tab when the device can't run
+    // Foundation Models on-device. Returns the raw text the model emits —
+    // caller decodes into a typed struct. Asks for JSON via responseMimeType
+    // so we don't have to strip code fences.
+    func generateRecipeJSON(systemPrompt: String, userPrompt: String) async throws -> String {
+        let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/\(model):generateContent?key=\(apiKey)")!
+        let body: [String: Any] = [
+            "system_instruction": ["parts": [["text": systemPrompt]]],
+            "contents": [["parts": [["text": userPrompt]]]],
+            "generationConfig": [
+                "responseMimeType": "application/json",
+                "temperature": 0.7
+            ]
+        ]
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 60
+
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        let raw = String(data: data, encoding: .utf8) ?? ""
+        guard (200..<300).contains(status) else {
+            throw GeminiError.httpError(status: status, body: raw)
+        }
+        let envelope = try JSONDecoder().decode(GeminiEnvelope.self, from: data)
+        guard let text = envelope.candidates.first?.content.parts.first?.text, !text.isEmpty else {
+            throw GeminiError.noContent
+        }
+        return text
+    }
+
     private static func parseResponse(data: Data, rawBody: String) throws -> GeminiMealResponse {
         #if DEBUG
         print("[Gemini] body=\(rawBody)")
