@@ -424,16 +424,73 @@ struct CookView: View {
 private struct HeroBanner: View {
     let recipe: Recipe
 
+    private var topIngredients: [String] {
+        recipe.ingredients.prefix(3).map(\.name)
+    }
+
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 18)
+            // Base gradient
+            RoundedRectangle(cornerRadius: SCTheme.Radius.lg, style: .continuous)
                 .fill(gradient)
-                .frame(height: 180)
-                .shadow(color: shadowTint.opacity(0.32), radius: 14, y: 6)
-            Image(systemName: recipe.symbol)
-                .font(.system(size: 64, weight: .heavy))
-                .foregroundStyle(.white.opacity(0.92))
+                .frame(height: 200)
+
+            // Top sheen
+            RoundedRectangle(cornerRadius: SCTheme.Radius.lg, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [.white.opacity(0.18), .clear],
+                    startPoint: .top, endPoint: .center
+                ))
+                .frame(height: 200)
+                .blendMode(.softLight)
+
+            // Bottom shade for legibility
+            RoundedRectangle(cornerRadius: SCTheme.Radius.lg, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [.clear, .black.opacity(0.18)],
+                    startPoint: .center, endPoint: .bottom
+                ))
+                .frame(height: 200)
+
+            // Off-center icon (right side, large)
+            HStack {
+                Spacer()
+                Image(systemName: recipe.symbol)
+                    .font(.system(size: 88, weight: .heavy))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .shadow(color: shadowTint.opacity(0.55), radius: 18, y: 6)
+                    .padding(.trailing, 24)
+                    .rotationEffect(.degrees(-8))
+            }
+            .frame(height: 200)
+
+            // Ingredient strip (bottom-left)
+            VStack {
+                Spacer()
+                HStack {
+                    if topIngredients.isEmpty {
+                        EmptyView()
+                    } else {
+                        HStack(spacing: 6) {
+                            ForEach(topIngredients, id: \.self) { name in
+                                Text(name)
+                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(.white.opacity(0.22)))
+                                    .overlay(Capsule().strokeBorder(.white.opacity(0.18)))
+                            }
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.leading, 16)
+                .padding(.bottom, 16)
+            }
+            .frame(height: 200)
         }
+        .shadow(color: shadowTint.opacity(0.32), radius: 16, y: 8)
     }
 
     private var gradient: LinearGradient {
