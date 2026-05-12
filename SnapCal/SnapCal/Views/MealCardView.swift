@@ -14,6 +14,8 @@ struct MealCardView: View {
     @State private var availableChains: [Chain] = []
     @State private var activeChain: Chain?
     @State private var isChainApplying = false
+    @State private var chainHapticTrigger = 0
+    @State private var saveHapticTrigger = 0
 
     init(
         meal: MealEntry,
@@ -81,6 +83,8 @@ struct MealCardView: View {
             meal = sourceMeal
             activeChain = inferInitialChain()
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: chainHapticTrigger)
+        .sensoryFeedback(.impact(weight: .medium), trigger: saveHapticTrigger)
     }
 
     // MARK: Photo
@@ -215,7 +219,7 @@ struct MealCardView: View {
     private func applyChain(_ chain: Chain) {
         isChainApplying = true
         activeChain = chain
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        chainHapticTrigger &+= 1
         Task {
             var updated = meal.items
             for index in updated.indices {
@@ -234,7 +238,7 @@ struct MealCardView: View {
     private func applyChainReset() {
         isChainApplying = true
         activeChain = nil
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        chainHapticTrigger &+= 1
         Task {
             let restored = pristineItemsProvider() ?? meal.items
             await MainActor.run {
@@ -348,7 +352,7 @@ struct MealCardView: View {
 
     private var saveButton: some View {
         Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            saveHapticTrigger &+= 1
             meal.recomputeTotals()
             onCommit(meal)
         } label: {

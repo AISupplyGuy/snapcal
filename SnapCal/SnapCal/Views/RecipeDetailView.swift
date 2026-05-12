@@ -55,6 +55,8 @@ struct RecipeDetailView: View {
         .navigationDestination(isPresented: $startingCookMode) {
             CookModeView(recipe: recipe)
         }
+        .onAppear { TabBarFadeModel.shared.opacity = 0 }
+        .onDisappear { TabBarFadeModel.shared.reset() }
     }
 
     // MARK: Hero
@@ -172,14 +174,21 @@ struct RecipeDetailView: View {
             Text(label.uppercased())
                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                 .tracking(1.0)
-                .foregroundStyle(tint)
+                .foregroundStyle(tint.opacity(0.85))
             Text("\(Int(value))g")
                 .font(.system(size: 18, weight: .heavy, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(tint)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(soft, in: RoundedRectangle(cornerRadius: 12))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(tint.opacity(0.16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(tint.opacity(0.28), lineWidth: 0.75)
+        )
     }
 
     // MARK: Ingredients

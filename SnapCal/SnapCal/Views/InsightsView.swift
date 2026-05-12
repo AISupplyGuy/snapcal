@@ -126,7 +126,7 @@ struct InsightsView: View {
                         ? SCTheme.Colors.carbGreen
                         : SCTheme.Colors.accentOrange
                 )
-                .cornerRadius(4)
+                .clipShape(.rect(cornerRadius: 4))
             }
             RuleMark(y: .value("Goal", goal))
                 .foregroundStyle(SCTheme.Colors.accentPink.opacity(0.6))

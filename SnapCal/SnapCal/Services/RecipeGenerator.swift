@@ -33,6 +33,7 @@ final class RecipeGenerator {
         var maxMinutes: Int?                   // nil = no constraint
         var diet: String?                      // "high protein", "vegetarian", etc.
         var index: Int                         // 0-based — drives palette + symbol rotation
+        var recentRecipeNames: [String] = []   // titles to steer away from — pulled from RecipeStore.recents
     }
 
     enum Engine: String {
@@ -220,6 +221,7 @@ final class RecipeGenerator {
     5. Quantities must be for the whole recipe (not per serving). Use grams or ounces for proteins, tbsp/tsp for fats, cup for liquids, count for whole items.
     6. NEVER include calorie or macro numbers. SnapCal computes nutrition from a verified database after you respond.
     7. Names: keep recipe titles short and concrete; keep ingredient `name` USDA-friendly ("chicken breast, raw"), and `displayName` user-friendly ("Chicken breast").
+    8. VARIETY: when "Recently made" is provided, pick a meaningfully different recipe — different protein, different cuisine, or different cooking method. Do not return another stir-fry if a stir-fry is in the list. Do not reuse a title or near-duplicate of any listed name.
     """
 
     static func buildPrompt(from brief: Brief) -> String {
@@ -233,6 +235,9 @@ final class RecipeGenerator {
         lines.append("Remaining today: \(brief.remainingCalories) kcal, \(brief.remainingProteinGrams) g protein.")
         if let m = brief.maxMinutes { lines.append("Max total time: \(m) minutes.") }
         if let d = brief.diet { lines.append("Diet preference: \(d).") }
+        if !brief.recentRecipeNames.isEmpty {
+            lines.append("Recently made (DO NOT repeat or echo these — pick something distinctly different): \(brief.recentRecipeNames.joined(separator: "; ")).")
+        }
         lines.append("Generate one recipe.")
         return lines.joined(separator: "\n")
     }

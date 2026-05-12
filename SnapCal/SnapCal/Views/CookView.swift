@@ -399,7 +399,8 @@ struct CookView: View {
             remainingProteinGrams: hitMacros ? remainingProtein : 35,
             maxMinutes: quickOnly ? 20 : nil,
             diet: nil,
-            index: store.recents.count
+            index: store.recents.count,
+            recentRecipeNames: Array(store.recents.prefix(6).map(\.name))
         )
 
         do {
@@ -557,15 +558,22 @@ private struct MacroPill: View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.system(size: 14, weight: .heavy, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(tint)
             Text(label.uppercased())
                 .font(.system(size: 9, weight: .heavy, design: .rounded))
                 .tracking(1.0)
-                .foregroundStyle(tint)
+                .foregroundStyle(tint.opacity(0.85))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(soft, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(tint.opacity(0.16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(tint.opacity(0.28), lineWidth: 0.75)
+        )
     }
 }
 

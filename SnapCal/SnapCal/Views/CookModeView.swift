@@ -20,6 +20,7 @@ struct CookModeView: View {
     @State private var timer: Timer?
     @State private var servingsToLog: Double = 1
     @State private var didLog = false
+    @State private var timerCompletionTrigger = 0
 
     private var step: RecipeStep { recipe.steps[currentIndex] }
     private var isLast: Bool { currentIndex == recipe.steps.count - 1 }
@@ -47,6 +48,10 @@ struct CookModeView: View {
         .toolbar(.hidden)
         .onAppear { resetTimerForCurrentStep() }
         .onDisappear { invalidateTimer(); UIApplication.shared.isIdleTimerDisabled = false }
+        .sensoryFeedback(.impact(weight: .light), trigger: currentIndex)
+        .sensoryFeedback(.impact(weight: .light), trigger: timerRunning)
+        .sensoryFeedback(.success, trigger: timerCompletionTrigger)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: didLog) { _, newValue in newValue }
         .gesture(
             DragGesture(minimumDistance: 30)
                 .onEnded { value in
@@ -145,7 +150,6 @@ struct CookModeView: View {
                 .contentTransition(.numericText(value: Double(timerRemaining)))
             HStack(spacing: 10) {
                 Button {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     if timerRunning { pauseTimer() } else { startTimer() }
                 } label: {
                     HStack(spacing: 6) {
@@ -212,7 +216,6 @@ struct CookModeView: View {
             VStack(spacing: 10) {
                 servingsStepper
                 Button {
-                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
                     logToTrack(recipe: recipe, servings: servingsToLog)
                     didLog = true
                     Task { @MainActor in
@@ -290,7 +293,6 @@ struct CookModeView: View {
 
     private func advance() {
         guard !isLast else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         invalidateTimer()
         withAnimation(.easeInOut(duration: 0.2)) {
             currentIndex += 1
@@ -300,7 +302,6 @@ struct CookModeView: View {
 
     private func regress() {
         guard currentIndex > 0 else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         invalidateTimer()
         withAnimation(.easeInOut(duration: 0.2)) {
             currentIndex -= 1
@@ -325,7 +326,7 @@ struct CookModeView: View {
                     timerRemaining -= 1
                     if timerRemaining == 0 {
                         timerRunning = false
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        timerCompletionTrigger &+= 1
                     }
                 }
             }

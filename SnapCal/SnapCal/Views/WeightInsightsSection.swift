@@ -257,7 +257,7 @@ struct WeightInsightsSection: View {
                 )
                 .interpolationMethod(.monotone)
                 .foregroundStyle(LinearGradient(
-                    colors: [SCTheme.Colors.proteinBlue.opacity(0.45), SCTheme.Colors.proteinBlue.opacity(0.02)],
+                    colors: [SCTheme.Colors.proteinBlue.opacity(0.22), SCTheme.Colors.proteinBlue.opacity(0.0)],
                     startPoint: .top, endPoint: .bottom
                 ))
                 LineMark(
@@ -289,6 +289,7 @@ struct WeightInsightsSection: View {
             }
         }
         .frame(height: 200)
+        .clipped()
         .chartYScale(domain: chartYDomain(entries: entries, goalDisplay: goalDisplay))
         .chartXAxis {
             AxisMarks(values: .stride(by: .day, count: max(1, entries.count / 5))) { _ in
